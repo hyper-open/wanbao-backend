@@ -31,7 +31,7 @@ def _db_conn():
     """直连 .env 的 MySQL 造/清测试数据（管理员密码可能已改，绕开后台 API）。"""
     import pymysql
 
-    env_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".env")
+    env_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), ".env")
     url = ""
     with open(env_path, encoding="utf-8") as f:
         for line in f:

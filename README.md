@@ -26,30 +26,77 @@
 ### 模型与能力路由
 ![模型管理](docs/images/admin-models.png?v=2)
 ![能力路由](docs/images/admin-router.png)
-## 快速开始
+## 部署指南
 
-### 前置要求
+### 1. 前置准备
 
-- Docker + docker compose
-- MySQL 5.7+/8.0、Redis、任意 S3 兼容对象存储（如 MinIO/rustfs）
-- 一个微信小程序（个人主体即可）与至少一家 LLM 供应商的 API Key
+| 组件 | 说明 |
+|---|---|
+| Docker + docker compose | 部署载体（应用单容器，中间件可复用宿主机已有实例）|
+| MySQL 5.7+ / 8.0 | 业务库，**启动时自动建库建表**，无需手工跑 SQL |
+| Redis | 异步任务队列 + 限流 + 会话检查点 |
+| S3 兼容对象存储 | 附件与导出文档（MinIO / rustfs / 阿里 OSS 均可）|
+| LLM 供应商 | 至少一家 OpenAI 兼容接口（DeepSeek / 通义 / 智谱 / 混元…）|
 
-### 部署
+### 2. 配置
 
 ```bash
-cp .env.example .env        # 填入数据库/Redis/S3/管理员密码
+git clone https://github.com/hyper-open/wanbao-backend.git
+cd wanbao-backend
+cp .env.example .env
+```
+
+必改项（其余变量均有代码内默认值，可渐进覆盖）：
+
+| 变量 | 说明 |
+|---|---|
+| `JWT_SECRET` | 登录态签名密钥，**随机长字符串** |
+| `DATABASE_URL` | 业务库连接串；docker 部署时主机名用 `host.docker.internal` |
+| `MYSQL_ROOT_URL` | root 连接串（自动建库 + 授权用）|
+| `REDIS_URL` | Redis 连接串 |
+| `S3_ENDPOINT` / `S3_ACCESS_KEY` / `S3_SECRET_KEY` | 对象存储 |
+| `ADMIN_PASSWORD` | 后台初始密码，**登录后立即改密** |
+
+### 3. 启动
+
+```bash
 docker compose build
 docker compose up -d
 ```
 
-启动时自动建库、建表、种子数据（供应商/模型/路由/19 个示例工具/管理员/充值档位）。
+首次启动自动完成：建库 → 建表 → 轻量迁移 → 种子数据（4 家供应商占位、模型与降级链、19 个示例工具、管理员、充值档位）。健康检查：`curl http://localhost:28082/api/tools` 返回 200。
 
-然后：
+> 不想先配 LLM 也能跑：`.env` 里 `LLM_MOCK=1` 走模拟输出，全流程（含扣费/后台）可通，之后再切真实供应商。
 
-1. 浏览器打开 `http://localhost:28082/admin`，用 `.env` 里的 `ADMIN_USERNAME/ADMIN_PASSWORD` 登录
-2. 「LLM 供应商」页把占位 API Key 换成真实 Key
-3. 「模型」页为模型勾选能力（支持视觉/支持工具调用），按需在「路由」页调整降级链
-4. 小程序端见 [wanbao-miniprogram](../wanbao-miniprogram) 仓库
+### 4. 首次后台配置
+
+浏览器打开 `http://localhost:28082/admin` 登录：
+
+1. **LLM 供应商**：把占位 API Key 换成真实 Key
+2. **模型**：为模型勾选能力（支持视觉 / 支持工具调用），模型加入哪个角色的降级链也在此页勾选
+3. **路由**：按需调整各角色链的顺序；如需图片请求走独立优先级，配置 `executor.vision` 子链
+4. **渠道账号**：填入你的小程序 appid/secret，选择主体类型（个人/企业）与支付通道
+5. **内容安全**：切到 wechat 真实审核（需渠道已配 secret），或先用 mock
+
+### 5. 小程序端接入
+
+见 [wanbao-miniprogram](../wanbao-miniprogram) 仓库 README：换 AppID、`baseUrl` 指向本服务、后台「开发设置 → 服务器域名」加入 request 合法域名（必须 HTTPS）。
+
+### 6. 公网部署要点
+
+- 应用端口 `28082`（可在 compose 改），生产建议前置 Nginx 做 HTTPS 与域名
+- 微信小程序要求 **HTTPS 合法域名**，且后端域名需完成 ICP 备案
+- `FILE_DELIVERY=proxy` 模式下文档下载经后端代理，无需对象存储公网可达
+
+### 7. 常见问题
+
+| 现象 | 原因与处理 |
+|---|---|
+| 容器内连不上 MySQL/Redis | docker 部署时主机名必须用 `host.docker.internal`（127.0.0.1 指容器自己）|
+| 搜索/看板报 Redis 错误 | `REDIS_URL` 未指向容器可达地址 |
+| 含图请求报「未配置视觉模型」 | 「模型」页给支持视觉的模型勾选「支持视觉」，或配 `executor.vision` 子链 |
+| 调用一直 pending | reaper 会在超时后自动标失败并退次；检查 worker 日志与 Redis 连通性 |
+| 登录密码不对 | 密码只在 seed 建号时写入，改 `.env` 不会更新已有账号——后台「管理员」页改密 |
 
 ### 自备清单
 
@@ -83,7 +130,7 @@ docker compose up -d
 ## 开源范围说明
 
 - `app/seed_tools.json` 随附 **19 个示例工具**（覆盖全部 10 个分类）；仓库作者的完整工具库（500+）为私有资产，不在开源范围
-- 集成测试（`test_*.py`）需本地服务运行，凭 `ADMIN_PASSWORD` 环境变量登录
+- 集成测试（`tests/` 目录）需本地服务运行，凭 `ADMIN_PASSWORD` 环境变量登录
 
 ## 合规提示
 
