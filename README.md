@@ -1,102 +1,82 @@
-# 万宝工具箱
+# 万宝AI助手 · 后端
 
-**一个入口，N 个 AI 工具。** 用户用自然语言描述需求（文本 + 可选附件），Agent 识别意图并调度对应工具，按次扣减使用次数。核心资产是 Tool Registry 与 Agent 调度——加功能 = 加工具配置，不改主链路。
+**一个入口，N 个 AI 工具。** 用户用自然语言描述需求（文本 + 可选附件），Agent 识别意图并调度对应工具，按积分计费。这是「万宝AI助手」微信小程序的服务端——FastAPI + 多供应商 LLM 网关 + 管理后台，前端在 [wanbao-miniprogram](../wanbao-miniprogram) 仓库。
 
-## 项目结构
+## 特性
 
-```
-backend/       FastAPI 后端（本仓库；即当前目录本身 = 仓库根）
-               app/api/       auth · agent · tool · attachment · billing · payment · admin · feedback
-               app/services/  agent 调度 · 计费 · 限流 · 内容安全 · 附件解析 · 嵌入
-               app/worker/    异步任务队列（工具异步执行）
-               static/        管理后台静态页
-docs/          设计方案 · 里程碑计划 · 合规清单 · 隐私政策
-scripts/       品牌资源生成（icon / 分享图，纯标准库）
-```
+- **Agent 意图识别 + 工具调度**：自由输入 → 意图识别 → 候选工具 → 多轮追问补齐信息 → 生成结果，全程单页不跳转
+- **多供应商 LLM 网关**：按角色（意图识别/工具执行/向量）维护有序降级链，失败自动降级 + 熔断；成本按 token 估算落库
+- **能力标签路由**：模型声明 `vision / function_call / audio_in` 能力，含图请求只路由给支持视觉的模型；支持 `executor.vision` 能力子链表达与主链不同的优先级
+- **多模态输入**：图片附件转 base64 data URL 组装 vision 消息（≤6MB/张），文本与图片统一进入模型链路
+- **交互式多轮会话**：可配置分析/追问/确认扣费/流式产出，状态落库可恢复
+- **计费体系**：积分（次数包）+ 订单 + 渠道账号 + 微信小程序虚拟支付（个人主体可开通）
+- **运营看板**：产出/成本趋势、工具排行、零调用筛查、失败红榜、退次榜、系统健康
+- **内容安全**：输入/附件/输出三层审查（微信 msgSecCheck 可接入），AI 生成内容显著标识
+- **管理后台**：工具/分类/渠道/供应商/模型/路由/限流/告警全量热配置，无需发版
 
-> **仓库布局**：`wanbao/` 是容器目录（本身不是仓库），下面并列两个独立仓库：
-> `backend/`（本仓库：后端 + 文档 + 资源生成脚本）与 `miniprogram/`（微信小程序，独立仓库）。
-> 小程序相关改动请到 `miniprogram/` 提交。
+## 截图
 
-## 技术栈
+### 运营看板
+![运营看板](docs/images/admin-dashboard.png)
 
-- **后端**：Python 3 / FastAPI / SQLAlchemy 2 / MySQL / Redis / LangGraph（多供应商 LLM + 降级路由）/ S3（附件存储）
-- **前端**：微信小程序原生框架（独立仓库 `miniprogram/`）
-- **部署**：Docker（复用宿主机已有 MySQL/Redis/S3 中间件）
+### 工具管理
+![工具管理](docs/images/admin-tools.png)
+
+### 模型与能力路由
+![模型管理](docs/images/admin-models.png)
 
 ## 快速开始
 
-### 后端
+### 前置要求
+
+- Docker + docker compose
+- MySQL 5.7+/8.0、Redis、任意 S3 兼容对象存储（如 MinIO/rustfs）
+- 一个微信小程序（个人主体即可）与至少一家 LLM 供应商的 API Key
+
+### 部署
 
 ```bash
-cd backend
-python -m venv .venv && source .venv/bin/activate
-pip install -r requirements.txt
-cp .env.example .env          # 按需填写配置
-
-uvicorn app.main:app --reload --port 8000
+cp .env.example .env        # 填入数据库/Redis/S3/管理员密码
+docker compose build
+docker compose up -d
 ```
 
-启动时自动建库、初始化表并执行 seed。API 文档见 `http://localhost:8000/docs`。
+启动时自动建库、建表、种子数据（供应商/模型/路由/19 个示例工具/管理员/充值档位）。
 
-或使用 Docker（复用本机已有中间件）：
+然后：
 
-```bash
-cd backend
-docker compose up -d --build   # 服务监听 :28082
-```
+1. 浏览器打开 `http://localhost:28082/admin`，用 `.env` 里的 `ADMIN_USERNAME/ADMIN_PASSWORD` 登录
+2. 「LLM 供应商」页把占位 API Key 换成真实 Key
+3. 「模型」页为模型勾选能力（支持视觉/支持工具调用），按需在「路由」页调整降级链
+4. 小程序端见 [wanbao-miniprogram](../wanbao-miniprogram) 仓库
 
-### 小程序（独立仓库）
+### 自备清单
 
-用微信开发者工具打开 `../miniprogram` 仓库根目录，填入自己的 `project.config.json` AppID 即可预览。
-
-品牌资源（icon / 分享图）由本仓库脚本生成，默认输出到同级的小程序仓库：
-
-```bash
-python3 scripts/gen_icon.py           # -> ../miniprogram/assets/icon.png
-python3 scripts/gen_share.py          # -> ../miniprogram/assets/invite-share.png
-# 路径不同时用 MP_ASSETS 指定：
-MP_ASSETS=/path/to/miniprogram/assets python3 scripts/gen_icon.py
-```
-
-## 部署与限流
-
-### 部署流程
-
-```bash
-cd backend
-docker compose build && docker compose up -d   # 重建镜像 + 启动（代码变更必须 build，restart 不更新代码）
-```
-
-- 启动时自动执行幂等迁移与 seed（新工具按 id 补种，已存在的工具行不会被覆盖——改配置需在后台或手动 UPDATE）
-- 生产入口：Nginx（gateway-nginx 容器）反代 `wbg.arfeifei.com` → 容器 :28082
-
-### 限流：三层防线
-
-| 层 | 机制 | 阈值 | 调整方式 |
-|---|---|---|---|
-| Nginx 入口 | limit_req 漏桶（按 IP） | 全站 30 r/s + burst 60；写接口 5 r/s + burst 10，超限 429 | 改 `~/Documents/hyper/devops/gateway/nginx/conf.d/default.conf` → `nginx -t` → `nginx -s reload`（详见 `devops/gateway/README.md`） |
-| 应用层 | Redis 固定窗口（按用户/按 IP） | 识别 30/min·IP；建会话 10/10min·用户、30/10min·IP | **后台动态调**：工具管理页"⚙ 限流参数"（存 `app_setting` 表，即时生效，无需重启） |
-| 经济闸 | 确认扣费 + 日成本上限 | 每用户每日 LLM 成本 2 元（`SESSION_DAILY_COST_LIMIT`） | `.env` + 重建容器 |
-
-限流实现：`app/services/ratelimit.py`（Redis 固定窗口，Redis 不可用自动放行不阻塞主链路）。
-
-### 运行时开关与本地组件
-
-| 开关/组件 | 说明 | 调整方式 |
-|---|---|---|
-| 流式输出（`stream_enabled`） | 简单工具产出的增量上屏；关闭 = 轮询链路 | 后台工具管理页"流式输出"勾选框，即时生效 |
-| 本地 bge-m3 embedding（:11434） | 意图识别召回 + 工具搜索的语义向量 | 宿主机 launchd 自启（`com.wanbao.embed-server`），详见 `~/Documents/hyper/devops/embed/README.md` |
-| 入口 Nginx | 公网反代 + 入口限流 | 详见 `~/Documents/hyper/devops/gateway/README.md` |
-
-`.env` 相关项：`EMBEDDING_PROVIDER/BASE_URL/API_KEY/MODEL`（语义召回，未配置自动回落关键词匹配）、`SESSION_*`（会话护栏）、`RATE_LIMIT_PER_MIN`（动态阈值的默认值）。
-
-## 计费模式
-
-余额/次数包：用户先充值购买次数，每次工具调用扣减一次。个人主体受微信虚拟支付月限额约束（详见 `docs/design.md`）。
+| 项 | 用途 |
+|---|---|
+| 微信小程序 AppID | 前端运行与 wx.login 身份 |
+| LLM 供应商 API Key | 意图识别与工具执行（DeepSeek/通义/智谱/混元等 OpenAI 兼容接口均可）|
+| S3 兼容对象存储 | 附件与导出文档 |
+| 微信虚拟支付（可选）| 个人主体可开通，管理后台「支付与交易」配置 |
 
 ## 文档
 
-- 系统设计：`docs/design.md`
-- 里程碑计划：`docs/m1-plan.md`
-- 合规清单：`docs/compliance-checklist.md`
+- [系统设计](docs/design.md) —— 架构、数据模型、Agent 调度、LLM 网关与能力路由（§7.3/§7.3.4）、多轮会话
+- [计费流程](docs/billing-flow.md)
+- [渠道账号](docs/channel-account.md)
+- [合规清单](docs/compliance-checklist.md)
+- [隐私政策](docs/privacy-policy.md) / [用户协议](docs/user-agreement.md)
+
+## 开源范围说明
+
+- `app/seed_tools.json` 随附 **19 个示例工具**（覆盖全部 10 个分类）；仓库作者的完整工具库（500+）为私有资产，不在开源范围
+- 集成测试（`test_*.py`）需本地服务运行，凭 `ADMIN_PASSWORD` 环境变量登录
+
+## 合规提示
+
+- 小程序内 AI 生成内容已做显著标识（顶部提示条 + 逐条角标）；若你的产品含 AI 问答/生成能力，**上线需申请「深度合成」相关服务类目**，该类目仅向企业/组织主体开放
+- 请遵守《生成式人工智能服务管理暂行办法》：如自行面向公众提供生成服务，需完成相应算法备案或与已备案供应商签署合作协议
+
+## License
+
+[MIT](LICENSE)
