@@ -1,0 +1,25 @@
+# 仅启动应用本身，复用本机已有中间件（MySQL/Redis/S3），不重新部署。
+# 通过 host.docker.internal 访问宿主机上已运行的 MySQL(23306)/Redis(26379)/S3(29000)。
+#
+# 构建镜像（BASE_IMAGE 可覆盖基础镜像，默认官方 python:3.13-slim）：
+#   docker compose build && docker compose up -d --no-build
+#   国内/内网访问不到 Docker Hub 时，改用本地已有的镜像地址，例如：
+#   BASE_IMAGE=docker.m.daocloud.io/library/python:3.13-slim docker compose build
+name: wanbao
+services:
+  app:
+    build:
+      context: .
+      args:
+        # 基础镜像；可用同名环境变量或 .env 里的 BASE_IMAGE 覆盖
+        BASE: ${BASE_IMAGE:-python:3.13-slim}
+    image: wanbao-backend:latest
+    container_name: wanbao
+    ports:
+      - "28082:8000"
+    env_file: .env
+    # 中间件连接串全部走 .env（env_file 直通，不在此覆盖）：
+    # 容器内访问宿主机中间件请用 host.docker.internal（见 .env.example 说明）
+      # 注意：业务开关（LLM_MOCK / WX_MOCK / PAYMENT_MOCK 等）一律在 .env 里配置。
+      # 不要在此覆盖——compose 的 environment 优先级高于 env_file，会静默盖掉 .env。
+    restart: unless-stopped

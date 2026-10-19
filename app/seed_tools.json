@@ -1,0 +1,508 @@
+[
+ {
+  "id": "copy_rewrite",
+  "name": "文案改写",
+  "category": "writing",
+  "description": "将给定文案按指定语气/平台改写，保留原意",
+  "input_schema": {
+   "attachment": {},
+   "text_fields": [
+    {
+     "key": "text",
+     "label": "原始文案",
+     "required": true
+    }
+   ]
+  },
+  "prompt_template": "你是一名资深文案。请将以下内容改写，保持原意、更通顺有吸引力：\n{input}",
+  "price_quota": 10,
+  "analyze_quota": 1,
+  "channel_pricing": {
+   "alipay": 2
+  },
+  "needs_attachment": false,
+  "async_exec": false,
+  "interactive": false,
+  "tags": [
+   "文案",
+   "改写",
+   "润色"
+  ],
+  "is_hot": false
+ },
+ {
+  "id": "weekly_report",
+  "name": "周报生成",
+  "category": "writing",
+  "description": "根据要点生成结构化周报",
+  "input_schema": {
+   "attachment": {},
+   "text_fields": [
+    {
+     "key": "text",
+     "label": "本周要点",
+     "required": true
+    }
+   ]
+  },
+  "prompt_template": "你是一名职场助手。请将以下要点整理为周报，包含：本周完成/进行中/下周计划：\n{input}",
+  "executor": "docx_export",
+  "price_quota": 10,
+  "analyze_quota": 1,
+  "needs_attachment": false,
+  "async_exec": false,
+  "interactive": true,
+  "interaction_config": {
+   "diff": true,
+   "allow_skip": true,
+   "max_rounds": 3,
+   "tool_calls": [],
+   "max_tool_rounds": 1
+  },
+  "tags": [
+   "周报",
+   "汇报",
+   "复盘"
+  ],
+  "is_hot": false
+ },
+ {
+  "id": "meeting_minutes",
+  "name": "会议纪要",
+  "category": "office",
+  "description": "根据会议记录要点整理成正式会议纪要",
+  "input_schema": {
+   "attachment": {},
+   "text_fields": [
+    {
+     "key": "text",
+     "label": "会议记录要点",
+     "required": true
+    }
+   ]
+  },
+  "prompt_template": "你是一名行政助理。请将以下要点整理为会议纪要，含：时间/参会人（如有）、议题、决议、待办与负责人：\n{input}",
+  "executor": "docx_export",
+  "price_quota": 10,
+  "analyze_quota": 1,
+  "needs_attachment": false,
+  "async_exec": false,
+  "interactive": true,
+  "interaction_config": {
+   "diff": true,
+   "allow_skip": true,
+   "max_rounds": 3,
+   "tool_calls": [],
+   "max_tool_rounds": 1
+  },
+  "tags": [
+   "会议",
+   "纪要",
+   "记录"
+  ],
+  "is_hot": false
+ },
+ {
+  "id": "summarize",
+  "name": "内容摘要",
+  "category": "office",
+  "description": "将长文本提炼为要点摘要",
+  "input_schema": {
+   "attachment": {},
+   "text_fields": [
+    {
+     "key": "text",
+     "label": "长文本",
+     "required": true
+    }
+   ]
+  },
+  "prompt_template": "你是一名摘要专家。请将以下内容提炼为 3-5 条要点摘要，保留关键信息：\n{input}",
+  "price_quota": 10,
+  "analyze_quota": 1,
+  "needs_attachment": false,
+  "async_exec": false,
+  "interactive": false,
+  "tags": [
+   "摘要",
+   "提炼",
+   "要点"
+  ],
+  "is_hot": false
+ },
+ {
+  "id": "xhs_copy",
+  "name": "小红书文案",
+  "category": "marketing",
+  "description": "生成带标题和 emoji 的小红书风格种草文案",
+  "input_schema": {
+   "attachment": {},
+   "text_fields": [
+    {
+     "key": "text",
+     "label": "产品/主题",
+     "required": true
+    }
+   ]
+  },
+  "prompt_template": "你是一名小红书爆款文案写手。请为以下内容生成一篇带吸睛标题、分段 emoji、真诚口吻的种草文案：\n{input}",
+  "price_quota": 10,
+  "analyze_quota": 1,
+  "needs_attachment": false,
+  "async_exec": false,
+  "interactive": true,
+  "interaction_config": {
+   "diff": true,
+   "allow_skip": true,
+   "max_rounds": 3,
+   "tool_calls": [],
+   "max_tool_rounds": 1
+  },
+  "tags": [
+   "小红书",
+   "种草",
+   "文案"
+  ],
+  "is_hot": false
+ },
+ {
+  "id": "title_gen",
+  "name": "爆款标题",
+  "category": "marketing",
+  "description": "为主题或内容生成 10 个不同风格的吸睛标题",
+  "input_schema": {
+   "attachment": {},
+   "text_fields": [
+    {
+     "key": "text",
+     "label": "主题或内容",
+     "required": true
+    }
+   ]
+  },
+  "prompt_template": "你是新媒体标题专家。请为以下主题/内容生成 10 个吸睛标题，覆盖不同风格（悬念反问、数字清单、对比冲突、利益点直给、情绪共鸣等），每条标注适用平台（公众号/小红书/抖音）：\n{input}",
+  "price_quota": 10,
+  "analyze_quota": 1,
+  "needs_attachment": false,
+  "async_exec": false,
+  "interactive": false,
+  "tags": [
+   "标题",
+   "新媒体",
+   "爆款"
+  ],
+  "is_hot": false
+ },
+ {
+  "id": "code_review",
+  "name": "代码审查",
+  "category": "code",
+  "description": "审查代码的 bug、安全、性能与可读性问题",
+  "input_schema": {
+   "attachment": {},
+   "text_fields": [
+    {
+     "key": "text",
+     "label": "内容（代码）",
+     "required": true
+    }
+   ]
+  },
+  "prompt_template": "你是资深工程师。请审查以下代码：1) 问题清单（bug/安全/性能/可读性，标注严重程度 高/中/低）；2) 逐条给出修改建议与示例代码；3) 一句话总体评价：\n{input}",
+  "price_quota": 10,
+  "analyze_quota": 1,
+  "needs_attachment": false,
+  "async_exec": false,
+  "interactive": true,
+  "interaction_config": {
+   "diff": true,
+   "allow_skip": true,
+   "max_rounds": 3,
+   "tool_calls": [],
+   "max_tool_rounds": 1
+  },
+  "tags": [
+   "代码",
+   "审查",
+   "质量"
+  ],
+  "is_hot": false
+ },
+ {
+  "id": "code_explain",
+  "name": "代码解读",
+  "category": "code",
+  "description": "逐段解释代码逻辑与作用",
+  "input_schema": {
+   "attachment": {},
+   "text_fields": [
+    {
+     "key": "text",
+     "label": "内容（代码）",
+     "required": true
+    }
+   ]
+  },
+  "prompt_template": "你是耐心的技术导师。请解释以下代码：先一句话概括功能，再逐段解释逻辑，标注关键语法/算法点，最后说明复杂度与潜在坑：\n{input}",
+  "price_quota": 10,
+  "analyze_quota": 1,
+  "needs_attachment": false,
+  "async_exec": false,
+  "interactive": false,
+  "tags": [
+   "代码",
+   "解读",
+   "学习"
+  ],
+  "is_hot": false
+ },
+ {
+  "id": "essay_polish",
+  "name": "作文润色",
+  "category": "study",
+  "description": "批改润色作文：亮点、问题与修改建议",
+  "input_schema": {
+   "attachment": {},
+   "text_fields": [
+    {
+     "key": "text",
+     "label": "作文原文（可注明年级与要求）",
+     "required": true
+    }
+   ]
+  },
+  "prompt_template": "你是语文老师。请批改以下作文：1) 总评；2) 亮点 2-3 条（引用原文）；3) 问题 2-3 条（引用原文并给修改示例）；4) 输出润色后的完整作文：\n{input}",
+  "executor": "docx_export",
+  "price_quota": 10,
+  "analyze_quota": 1,
+  "needs_attachment": false,
+  "async_exec": false,
+  "interactive": true,
+  "interaction_config": {
+   "diff": true,
+   "allow_skip": true,
+   "max_rounds": 3,
+   "tool_calls": [],
+   "max_tool_rounds": 1
+  },
+  "tags": [
+   "作文",
+   "批改",
+   "润色"
+  ],
+  "is_hot": false
+ },
+ {
+  "id": "translate",
+  "name": "翻译",
+  "category": "writing",
+  "description": "通用翻译：日常句子、对话、邮件、段落等任意内容多语言互译（非学术论文/字幕场景）",
+  "input_schema": {
+   "attachment": {},
+   "text_fields": [
+    {
+     "key": "text",
+     "label": "待翻译内容",
+     "required": true
+    }
+   ]
+  },
+  "prompt_template": "你是一名专业译员。请将以下内容翻译为通顺自然的目标语言（若用户未指定语言则译为英文）：\n{input}",
+  "price_quota": 10,
+  "analyze_quota": 1,
+  "needs_attachment": false,
+  "async_exec": false,
+  "interactive": false,
+  "tags": [
+   "翻译",
+   "英语",
+   "日语",
+   "多语言",
+   "中英互译",
+   "怎么说"
+  ],
+  "is_hot": false
+ },
+ {
+  "id": "travel_plan",
+  "name": "旅行计划",
+  "category": "life",
+  "description": "生成含行程表与预算的旅行攻略，可导出 Word 文档",
+  "input_schema": {
+   "attachment": {},
+   "text_fields": [
+    {
+     "key": "text",
+     "label": "目的地/天数/人数/预算/偏好",
+     "required": true
+    }
+   ]
+  },
+  "prompt_template": "你是旅行规划师。请根据以下需求制定旅行计划，用 Markdown 格式输出：\n# 标题（目的地+天数+主题）\n## 行程总览（一段话）\n## 按天行程（每天一个二级标题，按 上午/下午/晚上 分条列出行程，含交通与餐食建议）\n## 住宿建议\n## 预算估算（用 Markdown 表格：项目/预估费用/说明）\n## 避坑提示（3 条）\n要求：行程紧凑合理、交通衔接可行、预算贴近当地实际水平。\n\n{input}",
+  "executor": "docx_export",
+  "price_quota": 10,
+  "analyze_quota": 1,
+  "needs_attachment": false,
+  "async_exec": false,
+  "interactive": true,
+  "interaction_config": {
+   "diff": true,
+   "allow_skip": true,
+   "max_rounds": 3,
+   "tool_calls": [],
+   "max_tool_rounds": 1
+  },
+  "tags": [
+   "旅行",
+   "攻略",
+   "行程"
+  ],
+  "is_hot": false
+ },
+ {
+  "id": "greeting",
+  "name": "祝福语贺词",
+  "category": "writing",
+  "description": "生成节日祝福、婚宴祝酒、生日贺词等",
+  "input_schema": {
+   "attachment": {},
+   "text_fields": [
+    {
+     "key": "text",
+     "label": "场合与对象",
+     "required": true
+    }
+   ]
+  },
+  "prompt_template": "你是文案写手。请为以下场合生成 3 条祝福/贺词（正式版、幽默版、简短版），称呼得体、避免俗套套话：\n{input}",
+  "price_quota": 10,
+  "analyze_quota": 1,
+  "needs_attachment": false,
+  "async_exec": false,
+  "interactive": false,
+  "tags": [
+   "祝福",
+   "贺词",
+   "节日"
+  ],
+  "is_hot": false
+ },
+ {
+  "id": "data_report",
+  "name": "数据报告生成",
+  "category": "data",
+  "description": "从数据要点生成结构化分析报告",
+  "input_schema": {
+   "attachment": {},
+   "text_fields": [
+    {
+     "key": "text",
+     "label": "数据要点与结论方向",
+     "required": true
+    }
+   ]
+  },
+  "prompt_template": "你是数据分析师。请基于以下数据生成分析报告：核心结论（3 条以内，数据支撑）、分维度解读、异常点与可能原因、行动建议（按优先级）、需补充的数据清单：\n{input}",
+  "executor": "docx_export",
+  "price_quota": 10,
+  "analyze_quota": 1,
+  "needs_attachment": false,
+  "async_exec": false,
+  "interactive": true,
+  "interaction_config": {
+   "diff": true,
+   "allow_skip": true,
+   "max_rounds": 3,
+   "tool_calls": [],
+   "max_tool_rounds": 1
+  },
+  "tags": [
+   "数据报告",
+   "分析",
+   "周报月报"
+  ],
+  "is_hot": false
+ },
+ {
+  "id": "funnel_analysis",
+  "name": "漏斗分析",
+  "category": "data",
+  "description": "转化漏斗拆解、断点定位与优化建议",
+  "input_schema": {
+   "attachment": {},
+   "text_fields": [
+    {
+     "key": "text",
+     "label": "各环节转化数据",
+     "required": true
+    }
+   ]
+  },
+  "prompt_template": "你是增长分析师。请分析以下漏斗数据：各步转化率与行业参考对比、最大流失断点定位、可能原因假设（按影响排序）、每层的优化实验建议、补测数据清单：\n{input}",
+  "price_quota": 10,
+  "analyze_quota": 1,
+  "needs_attachment": false,
+  "async_exec": false,
+  "interactive": true,
+  "interaction_config": {
+   "diff": true,
+   "allow_skip": true,
+   "max_rounds": 3,
+   "tool_calls": [],
+   "max_tool_rounds": 1
+  },
+  "tags": [
+   "漏斗",
+   "转化率",
+   "增长"
+  ],
+  "is_hot": false
+ },
+ {
+  "id": "resume_optimize",
+  "name": "简历优化",
+  "category": "doc",
+  "description": "上传 docx/PDF 简历，AI 优化表达、突出亮点并导出新文档",
+  "input_schema": {
+   "attachment": {
+    "formats": [
+     "docx",
+     "pdf"
+    ],
+    "max_count": 3
+   },
+   "text_fields": [
+    {
+     "key": "text",
+     "label": "优化方向(可选)",
+     "required": false
+    }
+   ]
+  },
+  "prompt_template": "你是一名资深简历顾问。请基于以下简历原文进行优化：\n1) 强化量化成果与动词开头；2) 突出岗位匹配的关键词；3) 去除冗余、统一语气；\n4) 保留原有事实，不虚构。请输出优化后的完整简历文本。\n\n【简历原文】\n{input}",
+  "executor": "docx_resume",
+  "price_quota": 20,
+  "analyze_quota": 1,
+  "needs_attachment": true,
+  "async_exec": true,
+  "interactive": true,
+  "interaction_config": {
+   "diff": true,
+   "allow_skip": true,
+   "max_rounds": 5,
+   "tool_calls": [
+    "check_contact",
+    "check_quantified",
+    "check_timeline",
+    "check_job_intent",
+    "check_consistency"
+   ],
+   "max_tool_rounds": 2
+  },
+  "tags": [
+   "简历",
+   "求职"
+  ],
+  "is_hot": true
+ }
+]

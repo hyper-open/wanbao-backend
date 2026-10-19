@@ -1,0 +1,2466 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>万宝AI助手 · 管理后台</title>
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: -apple-system, "Segoe UI", "PingFang SC", sans-serif; background: #f5f6f8; color: #222; }
+  header { background: #1f2937; color: #fff; padding: 12px 20px; display: flex; align-items: center; gap: 16px; flex-shrink: 0; }
+  header h1 { font-size: 16px; margin: 0; font-weight: 600; }
+  .user-box { margin-left: auto; display: flex; align-items: center; gap: 10px; font-size: 13px; }
+  .user-box .who { opacity: .85; }
+  /* 左侧菜单布局：header 固定顶部，下方 左菜单 + 右内容 */
+  #app.show { display: flex; flex-direction: column; height: 100vh; }
+  .layout { display: flex; flex: 1; min-height: 0; }
+  #sidebar { width: 168px; flex-shrink: 0; background: #fff; border-right: 1px solid #e5e7eb; overflow-y: auto; padding: 8px 0 20px; }
+  #sidebar .grp { font-size: 11px; color: #9ca3af; padding: 14px 16px 4px; user-select: none; }
+  #sidebar button { display: block; width: 100%; text-align: left; background: none; border: none; border-left: 2px solid transparent; padding: 9px 16px; cursor: pointer; font-size: 14px; color: #374151; }
+  #sidebar button:hover { background: #f3f4f6; }
+  #sidebar button.active { color: #2563eb; background: #eff6ff; border-left-color: #2563eb; font-weight: 600; }
+  main { flex: 1; min-width: 0; padding: 20px 24px; overflow-y: auto; }
+  .toolbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; gap: 10px; flex-wrap: wrap; }
+  .batch-bar { display: flex; justify-content: flex-start; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 12px; }
+  .btn { background: #2563eb; color: #fff; border: none; padding: 8px 14px; border-radius: 6px; cursor: pointer; font-size: 13px; white-space: nowrap; }
+  .btn:hover { background: #1d4ed8; }
+  .btn.ghost { background: #e5e7eb; color: #374151; }
+  .btn.danger { background: #dc2626; }
+  .btn:disabled { opacity: .5; cursor: not-allowed; }
+
+  /* 表格：固定布局 + 长文本截断，避免列被挤爆 */
+  .table-wrap { overflow-x: auto; background: #fff; border-radius: 8px; box-shadow: 0 1px 2px rgba(0,0,0,.05); }
+  table { width: 100%; border-collapse: collapse; background: #fff; }
+  th, td { text-align: left; padding: 10px 12px; font-size: 13px; border-bottom: 1px solid #f1f2f4; vertical-align: middle; }
+  th { background: #f9fafb; color: #6b7280; font-weight: 600; white-space: nowrap; }
+  td.nowrap, th.nowrap { white-space: nowrap; }
+  td.trunc { max-width: 240px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  td.actions { white-space: nowrap; }
+  td.actions .btn { margin-right: 6px; }
+  td.actions .btn:last-child { margin-right: 0; }
+  .tag { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 12px; background: #dbeafe; color: #1d4ed8; white-space: nowrap; }
+  .tag.warn { background: #fee2e2; color: #b91c1c; }
+  .tag.ok { background: #dcfce7; color: #166534; }
+  .mono { font-family: ui-monospace, Menlo, monospace; font-size: 12px; }
+  .modal-bg { position: fixed; inset: 0; background: rgba(0,0,0,.4); display: none; align-items: flex-start; justify-content: center; padding-top: 40px; z-index: 50; }
+  .modal-bg.show { display: flex; }
+  .modal { background: #fff; border-radius: 10px; width: 640px; max-width: 94vw; max-height: 86vh; overflow: auto; padding: 20px; }
+  .modal h3 { margin: 0 0 14px; font-size: 16px; }
+  .field { margin-bottom: 10px; }
+  .field label { display: block; font-size: 12px; color: #6b7280; margin-bottom: 4px; }
+  .field input:not([type=checkbox]), .field textarea, .field select { width: 100%; padding: 8px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 13px; }
+  .field textarea { min-height: 90px; font-family: ui-monospace, Menlo, monospace; }
+  .utip { cursor: help; border-bottom: 1px dashed #cbd5e1; }
+.kpi-row { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 16px; }
+  .kpi { flex: 1; min-width: 110px; background: #fff; border: 1px solid #e5e7eb; border-radius: 12px; padding: 14px 16px; }
+  .kpi-num { font-size: 22px; font-weight: 700; }
+  .chart { display: flex; align-items: flex-end; gap: 6px; height: 140px; padding: 8px 4px 0; background: #f8fafc; border-radius: 8px; }
+  .bar-col { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; height: 100%; }
+  .bar-group { display: flex; align-items: flex-end; justify-content: center; gap: 3px; height: 100%; width: 100%; max-width: 34px; }
+  .bar-stack { position: relative; flex: 1; height: 100%; display: flex; align-items: flex-end; }
+  .bar { width: 100%; background: #2563eb; border-radius: 3px 3px 0 0; }
+  .bar-cost { background: #f59e0b; }
+  .bar-label { font-size: 10px; color: #6b7280; margin-top: 4px; white-space: nowrap; }
+  .cat-stats { display: flex; flex-wrap: wrap; gap: 8rpx; margin-bottom: 12px; }
+  .cstat { cursor: pointer; user-select: none; }
+  .cstat:active { opacity: .7; }
+  .cstat-on { background: var(--primary, #4f46e5); color: #fff; border-color: var(--primary, #4f46e5); }
+  .uavatar { width: 22px; height: 22px; border-radius: 50%; object-fit: cover; vertical-align: -6px; margin-right: 6px; border: 1px solid #e2e8f0; }
+  .secret-wrap { display: flex; gap: 6px; align-items: center; }
+  .secret-wrap input { flex: 1; }
+  .eye { cursor: pointer; color: #4f46e5; font-size: 12px; white-space: nowrap; user-select: none; }
+  .field.row { display: flex; gap: 10px; }
+  .field.row > div { flex: 1; }
+  /* 活动参数：分组布局（邀请有奖等字段较多） */
+  .camp-fields { display: flex; flex-wrap: wrap; gap: 10px; width: 100%; }
+  .camp-fields .cf-sec { flex: 0 0 100%; font-size: 12px; font-weight: 600; color: #4f46e5; margin-top: 4px; }
+  .camp-fields .cf-item { flex: 1 1 190px; min-width: 160px; }
+  .camp-fields .cf-hint { flex: 0 0 100%; line-height: 1.6; }
+  .modal-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 12px; }
+  .msg { padding: 8px 12px; border-radius: 6px; margin-bottom: 12px; font-size: 13px; display: none; }
+  .msg.ok { background: #dcfce7; color: #166534; display: block; }
+  .msg.err { background: #fee2e2; color: #991b1b; display: block; }
+  .muted { color: #9ca3af; font-size: 12px; }
+
+  /* 筛选栏 */
+  .filters { display: flex; gap: 10px; align-items: flex-end; flex-wrap: wrap; background: #fff; border-radius: 8px; padding: 12px 14px; margin-bottom: 12px; box-shadow: 0 1px 2px rgba(0,0,0,.05); }
+  .filters .f { display: flex; flex-direction: column; gap: 4px; }
+  .filters label { font-size: 12px; color: #6b7280; }
+  .filters input:not([type=checkbox]), .filters select { padding: 7px 9px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 13px; min-width: 120px; }
+  .filters .spacer { flex: 1; }
+  /* 可点击文本链接 */
+  .lnk { color: #2563eb; cursor: pointer; }
+  .lnk:hover { text-decoration: underline; }
+  /* 多选下拉（工具筛选等） */
+  .ms { position: relative; }
+  .ms-btn { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 7px 9px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 13px; min-width: 160px; background: #fff; cursor: pointer; box-sizing: border-box; }
+  .ms-btn .caret { color: #9ca3af; font-size: 10px; }
+  .ms-panel { display: none; position: absolute; z-index: 30; top: 100%; left: 0; margin-top: 4px; width: 280px; background: #fff; border: 1px solid #e5e7eb; border-radius: 8px; box-shadow: 0 8px 24px rgba(0,0,0,.12); padding: 8px; box-sizing: border-box; }
+  .ms.open .ms-panel { display: block; }
+  .ms-search { width: 100%; box-sizing: border-box; margin-bottom: 6px; }
+  .ms-list { max-height: 220px; overflow: auto; }
+  .ms-item { display: flex; align-items: center; gap: 6px; padding: 5px 6px; border-radius: 6px; font-size: 13px; color: #111827; cursor: pointer; }
+  .filters .ms-item { display: flex; align-items: center; gap: 6px; padding: 5px 6px; border-radius: 6px; font-size: 13px; color: #111827; cursor: pointer; }
+  .ms-item:hover { background: #f3f4f6; }
+  .ms-item input { min-width: 0; width: auto; }
+  .ms-item .ms-id { margin-left: auto; }
+  .ms-actions { display: flex; gap: 6px; justify-content: space-between; margin-top: 6px; border-top: 1px solid #f1f5f9; padding-top: 6px; }
+  /* 弹窗内联展开（避免被 .modal 的 overflow 裁掉） */
+  .ms-inline .ms-panel { position: static; width: auto; margin-top: 6px; box-shadow: none; }
+  .ms-inline .ms-list { max-height: 160px; }
+
+  /* 分页器 */
+  .pager { display: flex; align-items: center; gap: 10px; justify-content: flex-end; margin-top: 12px; font-size: 13px; color: #6b7280; }
+  .pager .btn { padding: 6px 12px; }
+
+  /* 登录页 */
+  #login { display: none; min-height: 100vh; align-items: center; justify-content: center; background: linear-gradient(135deg, #1e1b4b, #4c1d95); }
+  #login.show { display: flex; }
+  .login-card { background: #fff; border-radius: 14px; padding: 28px; width: 380px; max-width: 92vw; box-shadow: 0 20px 50px rgba(0,0,0,.3); }
+  .login-card h2 { margin: 0 0 6px; font-size: 18px; }
+  .login-card p { margin: 0 0 18px; font-size: 13px; color: #6b7280; }
+  .login-card .field { margin-bottom: 12px; }
+  .login-card .btn { width: 100%; padding: 10px; font-size: 14px; }
+  #app { display: none; }
+</style>
+</head>
+<body>
+
+<!-- 登录页 -->
+<div id="login">
+  <div class="login-card">
+    <h2>万宝AI助手 · 管理后台</h2>
+    <p>请使用管理员账号登录</p>
+    <div id="loginMsg" class="msg"></div>
+    <div class="field"><label>用户名</label><input id="lg_user" placeholder="admin" /></div>
+    <div class="field"><label>密码</label><input id="lg_pass" type="password" placeholder="请输入密码" /></div>
+    <button class="btn" onclick="doLogin()">登录</button>
+  </div>
+</div>
+
+<!-- 主体 -->
+<div id="app">
+<header>
+  <h1>万宝AI助手 · 管理后台</h1>
+  <span id="buildTag" class="muted" style="opacity:.6;font-size:11px;"></span>
+  <div class="user-box">
+    <span class="who" id="whoami"></span>
+    <button class="btn ghost" onclick="openChangePw()">修改密码</button>
+    <button class="btn ghost" onclick="logout()">退出</button>
+  </div>
+</header>
+<div class="layout">
+<aside id="sidebar">
+  <div class="grp">总览</div>
+  <button data-tab="dashboard" class="active">看板</button>
+  <div class="grp">工具运营</div>
+  <button data-tab="tools">工具</button>
+  <button data-tab="categories">工具分类</button>
+  <button data-tab="sessions">会话</button>
+  <button data-tab="invocations">调用明细</button>
+  <div class="grp">交易营销</div>
+  <button data-tab="packages">充值档位</button>
+  <button data-tab="campaigns">营销活动</button>
+  <button data-tab="accounts">渠道账号</button>
+  <button data-tab="orders">收款明细</button>
+  <button data-tab="consumption">消费总览</button>
+  <div class="grp">模型服务</div>
+  <button data-tab="providers">LLM 供应商</button>
+  <button data-tab="models">模型</button>
+  <button data-tab="routing">路由</button>
+  <button data-tab="monitor">监控</button>
+  <div class="grp">用户与系统</div>
+  <button data-tab="users">用户</button>
+  <button data-tab="feedback">反馈</button>
+  <button data-tab="admins">管理员</button>
+</aside>
+<main>
+  <div id="msg" class="msg"></div>
+  <div id="view"></div>
+</main>
+</div>
+</div>
+
+<div class="modal-bg" id="modalBg">
+  <div class="modal" id="modal"></div>
+</div>
+
+<script>
+const API = location.origin + "/api/admin";
+// 供应商接口协议：当前网关仅实现 OpenAI 兼容客户端（gateway._client），故只有一项
+const PROTOCOLS = ["openai-compatible"];
+// 模型档位：用于标识「便宜档/高质量档」，seed 按 classifier→cost、executor→quality 生成
+const TIERS = ["cost", "quality"];
+const $ = (s) => document.querySelector(s);
+let TOKEN = localStorage.getItem("wanbao_admin_token") || "";       // 管理员登录令牌
+let ME = null;
+
+function saveToken(v){ TOKEN = v; localStorage.setItem("wanbao_admin_token", v); }
+function logout(){
+  saveToken(""); ME = null;
+  $("#app").classList.remove("show"); $("#login").classList.add("show");
+}
+function loginMsg(t, ok){
+  const m = $("#loginMsg"); m.textContent = t; m.className = "msg " + (ok ? "ok" : "err");
+}
+async function doLogin(){
+  const username = $("#lg_user").value.trim(), password = $("#lg_pass").value;
+  if(!username || !password){ loginMsg("请输入用户名和密码", false); return; }
+  try{
+    const res = await fetch(API+"/login", {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({username, password})});
+    const data = await res.json();
+    if(!res.ok) throw new Error(data.detail || "登录失败");
+    saveToken(data.token); ME = data;
+    enterApp();
+  }catch(e){ loginMsg("登录失败：" + e.message, false); }
+}
+async function enterApp(){
+  $("#login").classList.remove("show"); $("#app").classList.add("show");
+  try{
+    ME = await api("/me");
+  }catch(e){ /* 令牌过期由 api() 统一处理 */ }
+  $("#whoami").textContent = (ME && ME.username) ? ME.username : "";
+  // 页面构建时间标记：用于确认浏览器拿到的是不是最新版本
+  const bt = document.getElementById("buildTag");
+  if (bt) bt.textContent = "build: " + document.lastModified;
+  switchTab("dashboard");  // 登录后默认进看板
+}
+function openChangePw(){
+  $("#modal").innerHTML = `<h3>修改密码</h3>
+    <div class="field"><label>原密码</label><input id="pw_old" type="password"/></div>
+    <div class="field"><label>新密码（至少 8 位）</label><input id="pw_new" type="password"/></div>
+    <div class="modal-actions"><button class="btn ghost" onclick="closeModal()">取消</button>
+      <button class="btn" onclick="saveChangePw()">保存</button></div>`;
+  showModal();
+}
+async function saveChangePw(){
+  try{
+    await api("/password", {method:"POST", body:JSON.stringify({old_password:$("#pw_old").value, new_password:$("#pw_new").value})});
+    showMsg("密码已修改，请重新登录", true); closeModal(); setTimeout(logout, 1200);
+  }catch(e){ showMsg("修改失败: "+e.message, false); }
+}
+
+function headers(extra={}){
+  const h = Object.assign({"Content-Type": "application/json"}, extra);
+  if(TOKEN) h["Authorization"] = "Bearer " + TOKEN;
+  return h;
+}
+function showMsg(t, ok){ const m=$("#msg"); m.textContent=t; m.className="msg "+(ok?"ok":"err"); setTimeout(()=>m.className="msg", 2500); }
+async function api(path, opts={}){
+  const res = await fetch(API+path, Object.assign({headers: headers()}, opts));
+  if(res.status===401){
+    showMsg("登录已过期，请重新登录", false);
+    setTimeout(logout, 1000);
+    throw new Error("401");
+  }
+  const ct = res.headers.get("content-type")||"";
+  const data = ct.includes("json") ? await res.json() : await res.text();
+  if(!res.ok) { const e = (data&&data.detail)||data||res.status; throw new Error(e); }
+  return data;
+}
+
+// ---------- 工具 ----------
+const TOOLS_FILTER = { q: "", category: "", enabled: "", channel: "", hot: "", executor: "", async_exec: "", interactive: "", attachment: "", sort_by: "", sort_dir: "desc", page: 1, size: 20 };
+const TOOL_SEL = new Set();   // 勾选的工具 id（跨页保留，批量操作后清空）
+let TOOL_PAGE_IDS = [];       // 当前页的工具 id（供全选/取消全选）
+async function renderTools(){
+  await loadToolOptions();
+  await loadAccounts();
+  const all = await loadTools(true);  // 全量缓存：供调用明细多选 / 分类统计
+  const qs = new URLSearchParams(Object.entries(TOOLS_FILTER).filter(([,v])=>v!=="" && v!==null)).toString();
+  const data = await api("/tools?" + qs);
+  const list = data.items || [];
+  TOOL_PAGE_IDS = list.map(t => t.id);
+  const stats = data.category_stats || [];
+  const statTotal = stats.reduce((a, s) => a + s.total, 0);
+  const statEn = stats.reduce((a, s) => a + s.enabled, 0);
+  const statDis = statTotal - statEn;
+  let html = `<div class="cat-stats">
+    <span class="tag cstat ${TOOLS_FILTER.category===""?"cstat-on":""}" onclick="TOOLS_FILTER.category=''; TOOLS_FILTER.page=1; renderTools()">全部 ${statTotal}（启 ${statEn} / 停 ${statDis}）</span>
+    ${stats.map(s=>`<span class="tag cstat ${TOOLS_FILTER.category===s.category?"cstat-on":""}" onclick="TOOLS_FILTER.category='${esc(s.category)}'; TOOLS_FILTER.page=1; renderTools()">${esc(s.name)} ${s.total}（启 ${s.enabled} / 停 ${s.disabled}）</span>`).join("")}
+  </div>`;
+  html += `<div class="filters">
+    <div class="f"><label>关键字（ID / 名称 / 描述）</label><input id="tl_q" value="${esc(TOOLS_FILTER.q)}" placeholder="如 简历"/></div>
+    <div class="f"><label>分类</label><select id="tl_cat">
+      ${[["","全部分类"]].concat((TOOL_OPTIONS.categories||[]).map(c=>[c.value,c.label])).map(([v,t])=>`<option value="${esc(v)}" ${TOOLS_FILTER.category===v?"selected":""}>${esc(t)}</option>`).join("")}
+    </select></div>
+    <div class="f"><label>渠道</label><select id="tl_chan">
+      ${[["","全部"],["none","未绑定（全渠道可见）"]].concat((CHANNEL_ACCOUNTS||[]).map(a=>[a.id,a.name||a.id])).map(([v,t])=>`<option value="${esc(v)}" ${TOOLS_FILTER.channel===v?"selected":""}>${esc(t)}</option>`).join("")}
+    </select></div>
+    <div class="f"><label>状态</label><select id="tl_enabled">
+      ${[["","全部"],["yes","启用"],["no","停用"]].map(([v,t])=>`<option value="${v}" ${TOOLS_FILTER.enabled===v?"selected":""}>${t}</option>`).join("")}
+    </select></div>
+    <div class="f"><label>热门</label><select id="tl_hot">
+      ${[["","全部"],["yes","热门"],["no","非热门"]].map(([v,t])=>`<option value="${v}" ${TOOLS_FILTER.hot===v?"selected":""}>${t}</option>`).join("")}
+    </select></div>
+    <div class="f"><label>执行器</label><select id="tl_exec">
+      ${[["","全部"],["none","纯配置"],["docx_export","Word 文档导出"],["docx_resume","Word 简历导出"],["pptx_resume","PPT 导出"]].map(([v,t])=>`<option value="${v}" ${TOOLS_FILTER.executor===v?"selected":""}>${t}</option>`).join("")}
+    </select></div>
+    <div class="f"><label>异步</label><select id="tl_async">
+      ${[["","全部"],["yes","异步"],["no","同步"]].map(([v,t])=>`<option value="${v}" ${TOOLS_FILTER.async_exec===v?"selected":""}>${t}</option>`).join("")}
+    </select></div>
+    <div class="f"><label>互动</label><select id="tl_inter">
+      ${[["","全部"],["yes","互动"],["no","一次性"]].map(([v,t])=>`<option value="${v}" ${TOOLS_FILTER.interactive===v?"selected":""}>${t}</option>`).join("")}
+    </select></div>
+    <div class="f"><label>附件</label><select id="tl_attach">
+      ${[["","全部"],["yes","需附件"],["no","免附件"]].map(([v,t])=>`<option value="${v}" ${TOOLS_FILTER.attachment===v?"selected":""}>${t}</option>`).join("")}
+    </select></div>
+    <button class="btn" onclick="applyToolFilter()">筛选</button>
+    <button class="btn ghost" onclick="resetToolFilter()">重置</button>
+    <div class="spacer"></div>
+    <span class="muted">共 ${data.total ?? list.length} 个</span>
+    <label class="nowrap" style="user-select:none;cursor:pointer;"><input type="checkbox" id="streamToggle" onchange="toggleStream(this.checked)"/> 流式输出</label>
+    <label class="nowrap" style="user-select:none;cursor:pointer;" title="关闭后 C 端工具详情页不展示免责横幅（专项+通用）"><input type="checkbox" id="discToggle" onchange="toggleDisclaimer(this.checked)"/> 免责声明</label>
+    <label class="nowrap" style="user-select:none;cursor:pointer;" title="开启后全部 LLM 调用返回假数据（无需 API Key，仅开发调试用）"><input type="checkbox" id="llmMockToggle" onchange="toggleLlmMock(this.checked)"/> LLM Mock</label>
+    <button class="btn ghost" onclick="runLimits()">⚙ 限流参数</button>
+    <button class="btn ghost" onclick="openEmbedConfig()">🧠 向量</button>
+    <button class="btn ghost" onclick="runToolHealth()">🩺 工具体检</button>
+    <button class="btn" onclick="openTool()">+ 新建工具</button>
+  </div>`;
+  const pageAllSel = TOOL_PAGE_IDS.length > 0 && TOOL_PAGE_IDS.every(id => TOOL_SEL.has(id));
+  html += `<div class="batch-bar"><span class="muted">已选 <b id="selCount">${TOOL_SEL.size}</b> 项</span>
+    <button class="btn ghost batch-btn" ${TOOL_SEL.size?"":"disabled"} onclick="batchTools('enable')">批量启用</button>
+    <button class="btn ghost batch-btn" ${TOOL_SEL.size?"":"disabled"} onclick="batchTools('disable')">批量停用</button>
+    <button class="btn ghost batch-btn" ${TOOL_SEL.size?"":"disabled"} onclick="batchTools('hot')">批量热门</button>
+    <button class="btn ghost batch-btn" ${TOOL_SEL.size?"":"disabled"} onclick="batchTools('unhot')">批量取消热门</button>
+    <button class="btn ghost batch-btn" ${TOOL_SEL.size?"":"disabled"} onclick="openToolChanBatch()">批量改渠道</button>
+    <button class="btn danger batch-btn" ${TOOL_SEL.size?"":"disabled"} onclick="batchTools('delete')">批量删除</button></div>`;
+  api("/settings/stream").then((r) => { const el = $("#streamToggle"); if (el) el.checked = !!r.enabled; }).catch(() => {});
+  api("/settings/disclaimer").then((r) => { const el = $("#discToggle"); if (el) el.checked = !!r.enabled; }).catch(() => {});
+  api("/settings/llm-mock").then((r) => { const el = $("#llmMockToggle"); if (el) el.checked = !!r.enabled; }).catch(() => {});
+  const arrow = (fd) => TOOLS_FILTER.sort_by === fd ? (TOOLS_FILTER.sort_dir === "asc" ? " ▲" : " ▼") : "";
+  const thSort = (fd, label) => `<th class="nowrap" style="cursor:pointer;user-select:none;" onclick="toolSort('${fd}')">${label}${arrow(fd)}</th>`;
+  html += `<div class="table-wrap"><table><thead><tr><th class="nowrap"><input type="checkbox" ${pageAllSel?"checked":""} onchange="toggleAllToolSel(this.checked)"/></th><th>ID</th>
+      ${thSort("name","名称")}<th>分类</th>${thSort("price_quota","分析/生成(积分)")}<th class="nowrap">附件</th>
+      ${thSort("async_exec","异步")}${thSort("interactive","互动")}<th>执行器</th><th class="nowrap">渠道</th><th class="nowrap">启用</th>
+      ${thSort("created_at","创建时间")}${thSort("updated_at","更新时间")}<th class="nowrap">操作</th></tr></thead><tbody>`;
+  for(const t of list){
+    html += `<tr>
+      <td class="nowrap"><input type="checkbox" ${TOOL_SEL.has(t.id)?"checked":""} onchange="toggleToolSel('${esc(t.id)}', this.checked)"/></td>
+      <td class="mono nowrap">${esc(t.id)}</td><td class="nowrap">${esc(t.name)}${t.is_hot?' <span class="tag ok">热</span>':''}</td><td class="nowrap">${esc(t.category_name||t.category||"-")}<div class="muted">${esc(t.category||"")}</div></td>
+      <td class="nowrap">${t.analyze_quota??0} / ${t.price_quota}</td>
+      <td class="nowrap">${t.needs_attachment?'<span class="tag">需附件</span>':'-'}</td>
+      <td class="nowrap">${t.async_exec?'<span class="tag">异步</span>':'-'}</td>
+      <td class="nowrap">${t.interactive?'<span class="tag ok">互动</span>':'-'}</td>
+      <td class="mono trunc" title="${esc(t.executor||'')}">${esc(t.executor_label||t.executor||'-')}</td>
+      <td class="nowrap">${(t.channel_ids&&t.channel_ids.length)?`<span class="tag">${esc(t.channel_ids.join(","))}</span>`:'<span class="muted">全部</span>'}</td>
+      <td class="nowrap">${t.enabled?'<span class="tag">启用</span>':'<span class="tag warn">停用</span>'}</td>
+      <td class="nowrap muted">${(t.created_at||"").replace("T"," ").slice(0,16)}</td>
+      <td class="nowrap muted">${(t.updated_at||"").replace("T"," ").slice(0,16)}</td>
+      <td class="actions"><button class="btn ghost" onclick="quickToolEnabled('${esc(t.id)}', ${!t.enabled})">${t.enabled?"停用":"启用"}</button>
+          <button class="btn ghost" onclick="quickToolHot('${esc(t.id)}', ${!t.is_hot})">${t.is_hot?"取消热门":"热门"}</button>
+          <button class="btn ghost" onclick="openToolChan('${esc(t.id)}')">改渠道</button>
+          <button class="btn ghost" onclick="openTool('${esc(t.id)}')">编辑</button>
+          <button class="btn danger" onclick="delTool('${esc(t.id)}')">删除</button></td></tr>`;
+  }
+  html += `</tbody></table></div>`;
+  html += pagerHTML(data, "TOOLS_FILTER");
+  $("#view").innerHTML = html;
+}
+function applyToolFilter(){
+  TOOLS_FILTER.q = $("#tl_q").value.trim();
+  TOOLS_FILTER.category = $("#tl_cat").value;
+  TOOLS_FILTER.channel = $("#tl_chan").value;
+  TOOLS_FILTER.enabled = $("#tl_enabled").value;
+  TOOLS_FILTER.hot = $("#tl_hot").value;
+  TOOLS_FILTER.executor = $("#tl_exec").value;
+  TOOLS_FILTER.async_exec = $("#tl_async").value;
+  TOOLS_FILTER.interactive = $("#tl_inter").value;
+  TOOLS_FILTER.attachment = $("#tl_attach").value;
+  TOOLS_FILTER.page = 1;
+  renderTools();
+}
+function resetToolFilter(){
+  Object.assign(TOOLS_FILTER, { q:"", category:"", enabled:"", channel:"", hot:"", executor:"", async_exec:"", interactive:"", attachment:"", sort_by:"", sort_dir:"desc", page:1, size:20 });
+  renderTools();
+}
+function renderDashboard(){
+  api("/monitor/dashboard?days=14").then(renderDashboardView).catch(e=>{
+    $("#view").innerHTML = `<p class="muted">加载失败: ${esc(e.message)}</p>`;
+  });
+}
+function renderDashboardView(d){
+  const k = d.kpi;
+  const maxCalls = Math.max(1, ...d.trend.map(x=>x.calls));
+  const maxCost = Math.max(0.001, ...d.trend.map(x=>x.llm_cost || 0));
+  const bars = d.trend.map(x=>{
+    const hc = Math.round(x.calls / maxCalls * 100);
+    const hp = x.llm_cost ? Math.max(2, Math.round(x.llm_cost / maxCost * 100)) : 0;
+    return `<div class="bar-col" title="${esc(x.date)} 产出 ${x.calls} 次 / 成本 ¥${x.llm_cost}">
+      <div class="bar-group">
+        <div class="bar-stack"><div class="bar" style="height:${hc}%"></div></div>
+        <div class="bar-stack"><div class="bar bar-cost"${hp?` style="height:${hp}%"`:""}></div></div>
+      </div>
+      <div class="bar-label">${x.date.slice(5)}</div></div>`;
+  }).join("");
+  const rank = d.ranking.map((t,i)=>`<tr><td>${i+1}</td><td class="nowrap">${esc(t.name)}</td>
+    <td class="nowrap">${t.calls}</td><td class="nowrap">${t.success_rate}%</td>
+    <td class="nowrap">¥${t.llm_cost}</td>
+    <td><span class="lnk" onclick="switchTab('tools')">${esc(t.category||t.tool_id)}</span></td></tr>`).join("");
+  const zero = d.zero_calls.map(t=>`<span class="tag warn" style="margin:4px">${esc(t.name)} <span class="muted">${esc(t.tool_id)}</span></span>`).join(" ") || '<span class="muted">无 ✓</span>';
+  const h = d.health;
+  $("#view").innerHTML = `
+    <h3>运营看板</h3>
+    <div class="kpi-row">
+      <div class="kpi"><div class="kpi-num">${k.calls}</div><div class="muted">今日产出</div></div>
+      <div class="kpi"><div class="kpi-num">${k.success_rate ?? "-"}%</div><div class="muted">成功率</div></div>
+      <div class="kpi"><div class="kpi-num">${k.dau}</div><div class="muted">活跃用户</div></div>
+      <div class="kpi"><div class="kpi-num">${k.sessions}</div><div class="muted">新建会话</div></div>
+      <div class="kpi"><div class="kpi-num">¥${k.revenue}</div><div class="muted">今日充值</div></div>
+      <div class="kpi"><div class="kpi-num">¥${k.llm_cost}</div><div class="muted">今日 LLM 成本</div></div>
+      <div class="kpi"><div class="kpi-num">${k.users_new}</div><div class="muted">新增用户</div></div>
+    </div>
+    <h4>近 14 天产出与成本趋势 <span class="muted" style="font-weight:400;font-size:12px;">（左右柱各自按 14 天峰值归一，不共轴）</span></h4>
+    <p class="muted" style="margin:0 0 6px;">
+      <span style="display:inline-block;width:10px;height:10px;background:#2563eb;border-radius:2px;margin-right:4px;vertical-align:middle;"></span>产出次数
+      <span style="display:inline-block;width:10px;height:10px;background:#f59e0b;border-radius:2px;margin:0 4px 0 14px;vertical-align:middle;"></span>LLM 成本（元）
+    </p>
+    <div class="chart">${bars}</div>
+    <h4>工具排行（近 7 天）</h4>
+    <div class="table-wrap"><table><thead><tr><th>#</th><th>工具</th><th>调用量</th><th>成功率</th><th>LLM 成本</th><th>分类</th></tr></thead><tbody>${rank}</tbody></table></div>
+    <h4>零调用工具（上架≥14 天无使用，下架候选 ${d.zero_calls.length} 个）</h4>
+    <div>${zero}</div>
+    <h4>失败率红榜（近 7 天：调用≥10 且失败率≥20%）</h4>
+    ${d.fail_red.length ? `<div class="table-wrap"><table><thead><tr><th>工具</th><th>调用</th><th>失败</th><th>失败率</th></tr></thead><tbody>
+      ${d.fail_red.map(x=>`<tr><td class="nowrap">${esc(x.name)}</td><td>${x.calls}</td><td class="nowrap">${x.failed}</td><td class="nowrap"><span class="tag warn">${x.rate}%</span></td></tr>`).join("")}
+    </tbody></table></div>` : '<p class="muted">无 ✓</p>'}
+    <h4>退次榜（近 7 天：扣费后退回 = 用户不满信号）</h4>
+    ${d.refund_list.length ? `<div class="table-wrap"><table><thead><tr><th>工具</th><th>退积分</th><th>扣费积分</th><th>退次率</th></tr></thead><tbody>
+      ${d.refund_list.map(x=>`<tr><td class="nowrap">${esc(x.name)}</td><td>${x.refunded}</td><td>${x.charged}</td><td class="nowrap"><span class="tag warn">${x.rate}%</span></td></tr>`).join("")}
+    </tbody></table></div>` : '<p class="muted">无 ✓</p>'}
+    <h4>系统健康</h4>
+    <p>Redis ${cDot(h.components.redis)}　Embedding ${cDot(h.components.embed)}　全站成本 ¥${h.global_cost.today}/${h.global_cost.limit}（${h.global_cost.pct}%）${h.components.embed ? "" : `<span class="muted">⚠️ 未配置向量模型，语义召回已降级为关键词匹配——<span class="lnk" onclick="openEmbedConfig()">立即配置</span>提升体验</span>`}</p>`;
+}
+function cDot(ok){ return ok ? '<span class="tag ok">正常</span>' : '<span class="tag warn">异常</span>'; }
+function toggleStream(on){
+  api("/settings/stream", {method:"POST", body:JSON.stringify({enabled:on})})
+    .then((r)=> showMsg("流式输出已" + (r.enabled ? "开启" : "关闭"), true))
+    .catch((e)=> showMsg("切换失败: " + e.message, false));
+}
+async function openEmbedConfig(){
+  try{
+    const d = await api("/settings/embedding");
+    $("#modal").innerHTML = `<h3>向量模型配置（语义召回）</h3>
+    <div class="field"><label>Provider</label><select id="em_provider">
+      <option value="local" ${d.provider==="local"?"selected":""}>local（未配置/降级：关键词召回）</option>
+      <option value="openai" ${d.provider==="openai"?"selected":""}>openai 兼容接口（推荐，真语义召回）</option>
+    </select></div>
+    <div class="field"><label>Base URL（OpenAI 兼容 /v1）</label><input id="em_base" value="${esc(d.base_url)}" placeholder="http://host.docker.internal:11434/v1"/></div>
+    <div class="field"><label>API Key（本地服务可随意填）</label><input id="em_key" value="${esc(d.api_key)}"/></div>
+    <div class="field"><label>模型名</label><input id="em_model" value="${esc(d.model)}" placeholder="bge-m3"/></div>
+    <p class="muted">保存后 30s 内生效；更换模型或服务会自动全量重算工具向量（517 个，CPU 上可能需要 1-2 分钟）。未配置时自动降级为关键词召回，不影响可用性。</p>
+    <div class="modal-actions"><button class="btn ghost" onclick="closeModal()">取消</button>
+    <button class="btn" onclick="saveEmbedding()">保存</button></div>`;
+    showModal();
+  }catch(e){ showMsg("加载失败: " + e.message, false); }
+}
+async function saveEmbedding(){
+  try{
+    await api("/settings/embedding", {method:"POST", body:JSON.stringify({
+      provider:$("#em_provider").value, base_url:$("#em_base").value.trim(),
+      api_key:$("#em_key").value.trim(), model:$("#em_model").value.trim()})});
+    showMsg("向量配置已保存（30s 内生效；如更换了模型/服务将自动重算向量）", true);
+    closeModal();
+  }catch(e){ showMsg("保存失败: " + e.message, false); }
+}
+function toggleLlmMock(on){
+  api("/settings/llm-mock", {method:"POST", body:JSON.stringify({enabled:on})})
+    .then((r)=> showMsg("LLM Mock已" + (r.enabled ? "开启" : "关闭") + "（30s 内生效）", true))
+    .catch((e)=> showMsg("切换失败: " + e.message, false));
+}
+function toggleDisclaimer(on){
+  api("/settings/disclaimer", {method:"POST", body:JSON.stringify({enabled:on})})
+    .then((r)=> showMsg("免责声明横幅已" + (r.enabled ? "开启" : "关闭") + (r.enabled ? "" : "（30s 内生效）"), true))
+    .catch((e)=> showMsg("切换失败: " + e.message, false));
+}
+async function runLimits(){
+  let r, st;
+  try {
+    [r, st] = await Promise.all([api("/settings/limits"), api("/monitor/limits")]);
+  } catch(e){ showMsg("加载失败: "+e.message, false); return; }
+  const rows = r.limits.map(l=>`
+    <div class="field row"><div><label>${esc(l.label)}</label>
+      <input id="lim_${esc(l.key)}" type="number" min="1" value="${l.value}"/>
+      <span class="muted">默认 ${l.default}（清空恢复默认）</span>
+    </div></div>`).join("");
+  const cDot = (ok) => ok ? '<span class="tag ok">正常</span>' : '<span class="tag warn">异常</span>';
+  const denyRows = st.denies.map(x=>`
+    <tr><td>${esc(x.label)}</td><td class="nowrap">${x.last_min}</td><td class="nowrap">${x.last10}</td><td class="nowrap">${x.today}</td></tr>`).join("");
+  const costPct = st.global_cost.pct || 0;
+  const costTag = costPct >= 80 ? '<span class="tag warn">告警水位</span>' : '<span class="tag ok">正常</span>';
+  showModal("640px");
+  $("#modal").innerHTML = `
+    <h3>⚙ 限流参数（保存即时生效）</h3>
+    <h4>组件健康</h4>
+    <p>Redis ${cDot(st.components.redis)}　Embedding 服务 ${cDot(st.components.embed)}${st.components.embed ? "" : `（<span class="lnk" onclick="openEmbedConfig()">去配置向量模型</span>，可提升语义召回）`}</p>
+    <h4>全站今日 LLM 成本</h4>
+    <p>${st.global_cost.today} / ${st.global_cost.limit} 元（${costPct}%）${costTag}</p>
+    <h4>限流触发（次数）</h4>
+    <div class="table-wrap"><table><thead><tr><th>防线</th><th>近1分钟</th><th>近10分钟</th><th>今日</th></tr></thead><tbody>${denyRows}</tbody></table></div>
+    <h4>内容安全</h4>
+    <div class="field"><label>Provider（wechat=微信 msgSecCheck，凭据在渠道账号）</label>
+      <select id="lim_cs_provider">
+        <option value="mock" ${r.content_security_provider==="mock"?"selected":""}>mock（演示拦截词表）</option>
+        <option value="wechat" ${r.content_security_provider==="wechat"?"selected":""}>wechat（msgSecCheck，异常自动降级）</option>
+      </select></div>
+    <h4>阈值调整</h4>
+    ${rows}
+    <div class="field"><label>告警 Webhook URL（钉钉/飞书/企微机器人；清空=不告警）</label>
+      <input id="lim_alert_webhook_url" value="${esc(r.alert_webhook_url||"")}"/></div>
+    <div class="modal-actions">
+      <button class="btn" onclick="saveLimits()">保存</button>
+      <button class="btn ghost" onclick="closeModal()">关闭</button>
+    </div>`;
+}
+async function saveLimits(){
+  const body = {};
+  r.limits.forEach(l=>{
+    const el = $("#lim_"+l.key);
+    if (el && el.value !== "") body[l.key] = Number(el.value);
+  });
+  const wh = $("#lim_alert_webhook_url");
+  if (wh) body.alert_webhook_url = wh.value.trim();
+  const cs = $("#lim_cs_provider");
+  if (cs) body.content_security_provider = cs.value;
+  try{
+    await api("/settings/limits", {method:"POST", body:JSON.stringify(body)});
+    showMsg("限流参数已保存，即时生效", true); closeModal();
+  }catch(e){ showMsg("保存失败: "+e.message, false); }
+}
+async function runToolHealth(){  showModal("720px");
+  try{
+    const r = await api("/tools/health?llm=1");
+    const li = (arr, f) => arr.length ? `<ul>${arr.map(f).join("")}</ul>` : `<p class="muted">无 ✓</p>`;
+    $("#modal").innerHTML = `
+      <h3>🩺 工具体检报告（共 ${r.total} 个）</h3>
+      <h4>配置完整性（${r.config_issues.length}）</h4>
+      ${li(r.config_issues, i=>`<li><span class="mono">${esc(i.tool_id)}</span> ${esc(i.name)} —— ${esc(i.issue)}</li>`)}
+      <h4>描述混淆对（${r.confusion_pairs.length}，余弦≥0.90 易选错）</h4>
+      ${li(r.confusion_pairs, p=>`<li><b>${esc(p.a_name)}</b> ↔ <b>${esc(p.b_name)}</b>（${p.score}）</li>`)}
+      <h4>召回未命中（${r.recall_misses.length}，以名称/标签搜索时没进 TOP${8}）</h4>
+      ${li(r.recall_misses, m=>`<li><span class="mono">${esc(m.tool_id)}</span> ${esc(m.name)} —— 查询「${esc(m.query)}」（${esc(m.query_type)}）未进候选</li>`)}
+      <h4>分类器抽查（混淆对 ${r.llm_checks.length} 组问答${r.llm_skipped?"，已跳过":""}）</h4>
+      ${r.llm_skipped ? `<p class="muted">已跳过</p>` : li(r.llm_checks, c=>`<li>${c.ok?'<span class="tag ok">区分成功</span>':'<span class="tag warn">选错</span>'} 「${esc(c.query)}」 期望 ${esc(c.expect)} 实际 ${esc(c.got)}</li>`)}
+      <button class="btn" onclick="closeModal()">知道了</button>`;
+  }catch(e){
+    $("#modal").innerHTML = `<h3>体检失败</h3><p class="muted">${esc(e.message)}</p><button class="btn" onclick="closeModal()">关闭</button>`;
+  }
+}
+async function openTool(id){
+  let t;
+  try{
+    t = id ? await api("/tools/"+id) : {id:"",name:"",category:"",description:"",prompt_template:"",price_quota:1,analyze_quota:0,needs_attachment:false,async_exec:false,executor:"",enabled:true,interactive:false,analysis_prompt:"",interaction_config:null};
+  }catch(e){ showMsg("打开失败: "+e.message, false); return; }
+  await loadToolOptions();
+  await loadAccounts();
+  const accs = (CHANNEL_ACCOUNTS||[]).filter(a=>a.type==="wechat_mp");
+  const catOpts = selectOptsL([{value:"",label:"（未分类）"}].concat(TOOL_OPTIONS.categories||[]), t.category||"");
+  const execOpts = selectOptsL(TOOL_OPTIONS.executors||[], t.executor||"");
+  $("#modal").innerHTML = `
+    <h3>${id?"编辑工具":"新建工具"}</h3>
+    <div class="field"><label>ID（唯一，创建后不可改）</label><input id="f_id" value="${esc(t.id)}" ${id?"disabled":""}/></div>
+    <div class="field row"><div><label>名称</label><input id="f_name" value="${esc(t.name)}"/></div><div><label>分类</label><select id="f_category">${catOpts}</select></div></div>
+    <div class="field"><label>描述（用于意图识别）</label><textarea id="f_desc">${esc(t.description||"")}</textarea></div>
+    <div class="field"><label>提示词模板（用 {input} 占位用户输入）</label><textarea id="f_prompt">${esc(t.prompt_template||"")}</textarea></div>
+    <div class="field">${multiSelect("msChan", "可见渠道（不选 = 全部渠道；多渠道矩阵：各小程序可有独立工具集）", accs.map(a=>({value:a.id,label:(a.name||a.id)+"（"+a.appid+"）"})), t.channel_ids||[], {allText:"全部渠道", inline:true})}</div>
+    <div class="field"><label>渠道积分定价覆盖 JSON（如 {"alipay":20}，未配置用默认价格；§9.5）</label><textarea id="f_cpricing" style="min-height:56px;">${t.channel_pricing?esc(JSON.stringify(t.channel_pricing)):""}</textarea></div>
+    <div class="field"><label>专项免责声明（法律/医疗/金融类工具；留空=仅通用免责，展示在 C 端工具详情页）</label><textarea id="f_disclaimer" style="min-height:56px;">${t.disclaimer?esc(t.disclaimer):""}</textarea></div>
+    <div class="field row"><div><label>搜索标签（逗号分隔）</label><input id="f_tags" value="${esc((t.tags||[]).join(","))}"/></div>
+      <div><label>类目内排序(小在前)</label><input id="f_tsort" type="number" value="${t.sort??0}"/></div>
+      <div><label><input type="checkbox" id="f_ishot" ${t.is_hot?"checked":""}/> 热门标记</label></div></div>
+    <div class="field row">
+      <div><label>生成/导出消耗积分</label><input id="f_price" type="number" value="${t.price_quota}"/></div>
+      <div><label>分析消耗积分（交互式工具；0=不扣）</label><input id="f_aq" type="number" value="${t.analyze_quota??0}"/></div>
+      <div><label>成本告警阈值(元/月，空=全局默认)</label><input id="f_calert" type="number" step="0.01" value="${t.cost_alert_threshold??""}"/></div>
+      <div><label>执行器（代码编排扩展点）</label><select id="f_exec">${execOpts}</select></div>
+    </div>
+    <div class="field row">
+      <div><label><input type="checkbox" id="f_att" ${t.needs_attachment?"checked":""}/> 需要附件</label></div>
+      <div><label><input type="checkbox" id="f_async" ${t.async_exec?"checked":""}/> 异步执行</label></div>
+      <div><label><input type="checkbox" id="f_enabled" ${t.enabled?"checked":""}/> 启用</label></div>
+    </div>
+    <fieldset style="border:1px solid #e5e7eb;border-radius:8px;padding:10px 12px;margin:0 0 10px;">
+      <legend style="font-size:12px;color:#6b7280;padding:0 6px;">交互式多轮会话（§6.5 图内人工介入）</legend>
+      <div class="field"><label><input type="checkbox" id="f_interactive" ${t.interactive?"checked":""}/> 交互式（前端进会话页；分析 → 追问 → 确认扣积分 → 产出）</label></div>
+      <div class="field"><label><input type="checkbox" id="f_diff" ${(!t.interaction_config || t.interaction_config.diff !== false)?"checked":""}/> 生成优化前后对比（产出后对比原文/结果，展示在会话页）</label></div>
+      <div class="field"><label>分析提示词（只输出 JSON：summary/missing/suspicious；留空用框架默认）</label><textarea id="f_ixprompt" style="min-height:80px;">${esc(t.analysis_prompt||"")}</textarea></div>
+      <div class="field"><label>交互配置 JSON（max_rounds / allow_skip / tool_calls / max_tool_rounds）</label><textarea id="f_ixconfig" style="min-height:56px;">${t.interaction_config?esc(JSON.stringify(t.interaction_config)):""}</textarea></div>
+    </fieldset>
+    <div class="modal-actions">
+      <button class="btn ghost" onclick="closeModal()">取消</button>
+      <button class="btn" onclick="saveTool('${esc(id||"")}')">保存</button>
+    </div>`;
+  showModal();
+}
+async function saveTool(id){
+  let cpricing = null;
+  const raw = $("#f_cpricing").value.trim();
+  if(raw){ try{ cpricing = JSON.parse(raw); }catch(e){ showMsg("渠道定价 JSON 格式错误", false); return; } }
+  let ixconfig = null;
+  const rawIx = $("#f_ixconfig").value.trim();
+  if(rawIx){ try{ ixconfig = JSON.parse(rawIx); }catch(e){ showMsg("交互配置 JSON 格式错误", false); return; } }
+  ixconfig = ixconfig || {}; ixconfig.diff = $("#f_diff").checked;  // 显式写入「优化前后对比」开关
+  const body = {
+    name:$("#f_name").value, category:$("#f_category").value, description:$("#f_desc").value,
+    prompt_template:$("#f_prompt").value, price_quota:Number($("#f_price").value),
+    analyze_quota:Number($("#f_aq").value||0),
+    disclaimer:$("#f_disclaimer").value.trim()||null,
+    channel_pricing:cpricing,
+    cost_alert_threshold:$("#f_calert").value===""?null:Number($("#f_calert").value),
+    tags:$("#f_tags").value.split(",").map(s=>s.trim()).filter(Boolean),
+    sort:Number($("#f_tsort").value||0), is_hot:$("#f_ishot").checked,
+    executor:$("#f_exec").value||null, needs_attachment:$("#f_att").checked,
+    async_exec:$("#f_async").checked, enabled:$("#f_enabled").checked,
+    channel_ids:Array.from(document.querySelectorAll("#msChan input:checked")).map(x=>x.value),
+    // 交互式多轮会话（§6.5）
+    interactive:$("#f_interactive").checked,
+    analysis_prompt:$("#f_ixprompt").value||null,
+    interaction_config:ixconfig
+  };
+  if(!id){ body.id = $("#f_id").value; if(!body.id){ showMsg("ID 必填", false); return; } }
+  try{
+    if(id) await api("/tools/"+id, {method:"PUT", body:JSON.stringify(body)});
+    else await api("/tools", {method:"POST", body:JSON.stringify(body)});
+    showMsg("已保存", true); closeModal(); renderTools();
+  }catch(e){ showMsg("保存失败: "+e.message, false); }
+}
+async function delTool(id){
+  if(!confirm("确认删除工具 "+id+"？")) return;
+  try{ await api("/tools/"+id, {method:"DELETE"}); showMsg("已删除", true); renderTools(); }
+  catch(e){ showMsg("删除失败: "+e.message, false); }
+}
+
+// ---------- 充值档位 ----------
+async function renderPackages(){
+  const list = await api("/packages");
+  await loadChannelOptions();
+  let html = `<div class="toolbar"><button class="btn" onclick="openPkg()">+ 新建档位</button></div><div class="table-wrap"><table>
+    <thead><tr><th>ID</th><th>名称</th><th class="nowrap">积分</th><th class="nowrap">安卓价</th><th class="nowrap">iOS价</th><th class="nowrap">可售渠道</th><th>渠道价</th><th>说明</th><th class="nowrap">排序</th><th class="nowrap">启用</th><th class="nowrap">操作</th></tr></thead><tbody>`;
+  for(const p of list){
+    html += `<tr><td>${p.id}</td><td class="nowrap">${esc(p.name)}</td><td>${p.quota}</td><td>${p.price}</td><td>${p.price_ios}</td>
+      <td class="nowrap">${esc((p.channels||["wechat"]).map(chanLabel).join("、"))}</td><td class="mono trunc" title="${esc(p.channel_prices?JSON.stringify(p.channel_prices):"")}">${p.channel_prices?esc(JSON.stringify(p.channel_prices)):'-'}</td>
+      <td class="trunc" title="${esc(p.description||"")}">${esc(p.description||"")}</td><td>${p.sort}</td><td class="nowrap">${p.enabled?'<span class="tag">启用</span>':'<span class="tag warn">停用</span>'}</td>
+      <td class="actions"><button class="btn ghost" onclick="openPkg(${p.id})">编辑</button><button class="btn danger" onclick="delPkg(${p.id})">删除</button></td></tr>`;
+  }
+  html += `</tbody></table></div>`;
+  $("#view").innerHTML = html;
+}
+async function openPkg(id){
+  let p;
+  try{
+    p = id ? await api("/packages/"+id) : {name:"",quota:10,price:9.9,price_ios:11.2,description:"",sort:0,enabled:true,channels:["wechat"],channel_prices:null};
+  }catch(e){ showMsg("打开失败: "+e.message, false); return; }
+  await loadChannelOptions();
+  const chanItems = CHANNEL_OPTIONS.length ? CHANNEL_OPTIONS : [{value:"wechat",label:"微信"},{value:"alipay",label:"支付宝"}];
+  const chans = (p.channels && p.channels.length) ? p.channels : ["wechat"];
+  $("#modal").innerHTML = `<h3>${id?"编辑档位":"新建档位"}</h3>
+    <div class="field"><label>名称</label><input id="p_name" value="${esc(p.name)}"/></div>
+    <div class="field row"><div><label>积分</label><input id="p_quota" type="number" value="${p.quota}"/></div>
+      <div><label>默认安卓价</label><input id="p_price" type="number" step="0.1" value="${p.price}"/></div>
+      <div><label>默认iOS价</label><input id="p_pios" type="number" step="0.1" value="${p.price_ios}"/></div></div>
+    <div class="field">${multiSelect("p_channels_ms", "可售渠道（多选）", chanItems, chans, {allText:"未选择（默认微信）", inline:true, searchPlaceholder:"搜索渠道…"})}</div>
+    <div class="field row"><div><label>排序</label><input id="p_sort" type="number" value="${p.sort}"/></div>
+      <div><label>说明</label><input id="p_desc" value="${esc(p.description||"")}"/></div></div>
+    <div class="field"><label>渠道价格覆盖 JSON（如 {"alipay":8.8}，未配置回落默认价；§9.5）</label><textarea id="p_cprices" style="min-height:60px;">${p.channel_prices?esc(JSON.stringify(p.channel_prices)):""}</textarea></div>
+    <div class="field row"><div><label><input type="checkbox" id="p_enabled" ${p.enabled?"checked":""}/> 启用</label></div></div>
+    <div class="modal-actions"><button class="btn ghost" onclick="closeModal()">取消</button>
+      <button class="btn" onclick="savePkg(${id||""})">保存</button></div>`;
+  showModal();
+}
+async function savePkg(id){
+  let channels = msChecked("p_channels_ms");
+  if(!channels.length) channels = ["wechat"];
+  let cprices = null;
+  const raw = $("#p_cprices").value.trim();
+  if(raw){ try{ cprices = JSON.parse(raw); }catch(e){ showMsg("渠道价格 JSON 格式错误", false); return; } }
+  const body={name:$("#p_name").value,quota:Number($("#p_quota").value),price:Number($("#p_price").value),
+    price_ios:Number($("#p_pios").value),sort:Number($("#p_sort").value),description:$("#p_desc").value,
+    enabled:$("#p_enabled").checked,channels,channel_prices:cprices};
+  try{ if(id) await api("/packages/"+id,{method:"PUT",body:JSON.stringify(body)}); else await api("/packages",{method:"POST",body:JSON.stringify(body)});
+    showMsg("已保存",true); closeModal(); renderPackages(); }catch(e){ showMsg("保存失败: "+e.message,false); }
+}
+async function delPkg(id){ if(!confirm("确认删除？")) return; try{ await api("/packages/"+id,{method:"DELETE"}); showMsg("已删除",true); renderPackages(); }catch(e){ showMsg("删除失败: "+e.message,false);} }
+
+// ---------- 渠道活动折扣 ----------
+function userTip(u){
+  if(!u) return "";
+  const ch = (u.channels||[]).join("/") || "-";
+  return `渠道: ${ch}\n昵称: ${u.nickname||"-"}\n手机号: ${u.phone||"-"}\nopenid: ${u.openid||"-"}`;
+}
+function uidCell(id, u, extra){
+  const t = userTip(u);
+  const inner = t ? `<span class="utip" title="${esc(t)}">${id}</span>` : `${id}`;
+  const av = (u && u.avatar) ? `<img class="uavatar" src="/api/admin/user-avatar/${id}?token=${encodeURIComponent(TOKEN)}" onerror="this.remove()">` : "";
+  return `${av}${inner}${extra||""}`;
+}
+function discountLabel(d){ const n = Number(d) * 10; return (Math.round(n*10)/10) + " 折"; }
+function campaignStatus(c){
+  const now = new Date();
+  const start = c.start_at ? new Date(c.start_at) : null;
+  const end = c.end_at ? new Date(c.end_at) : null;
+  if(!c.enabled) return '<span class="tag warn">已停用</span>';
+  if(start && start > now) return '<span class="tag">未开始</span>';
+  if(end && end <= now) return '<span class="tag warn">已结束</span>';
+  return '<span class="tag ok">生效中</span>';
+}
+const CTYPE_LABEL = { discount:"充值优惠", invite:"邀请有奖", checkin:"签到奖励" };
+function ctypeLabel(t){ return CTYPE_LABEL[t] || t || "充值优惠"; }
+function campaignParamsText(c){
+  const cfg = c.config || {};
+  if(c.type === "invite"){
+    const days = cfg.first_recharge_days ?? 30;
+    return `① 注册即送 ${cfg.reward_quota ?? 1} 积分（日 ${cfg.invite_daily_cap ?? 10}/月 ${cfg.invite_monthly_cap ?? 100}）`
+      + ` · ② 首充加奖 ${cfg.recharge_percent ?? 10}%${days ? "（" + days + " 天内首充）" : "（不限时）"}（日 ${cfg.recharge_daily_cap ?? 10}/月 ${cfg.recharge_monthly_cap ?? 100}）`
+      + ` · 奖励 ${cfg.valid_days ?? 30} 天有效`;
+  }
+  if(c.type === "checkin") return `每日签到送 ${cfg.quota ?? 1} 积分 · ${(cfg.valid_days ?? 30) ? (cfg.valid_days ?? 30) + " 天有效" : "不过期"}`;
+  // 充值优惠：两种方式
+  if(cfg.mode === "bonus") return `送积分 ${cfg.bonus_percent ?? 10}%（充值积分的百分比）`;
+  return `打折 ${discountLabel(c.discount)}`;
+}
+
+// 充值优惠：切换「打折 / 送积分」时显隐对应输入
+function onDiscountMode(){
+  const mode = $("#c_discount_mode").value;
+  const db = $("#c_discount_box"), bb = $("#c_bonus_box");
+  if(db) db.style.display = mode === "discount" ? "" : "none";
+  if(bb) bb.style.display = mode === "bonus" ? "" : "none";
+}
+async function renderCampaigns(){
+  const list = await api("/campaigns");
+  let html = `<p class="muted">活动按类型管理：<b>充值优惠</b>（打折 / 送积分 二选一）、<b>邀请有奖</b>（①好友注册即送；②好友在期限内首充按比例加奖）、<b>签到奖励</b>（每日签到送积分）。
+    同一渠道同一类型同一时间只生效一条（取最近开始的）；<b>没有配置就没有该活动</b>（不会走任何默认值）。<br/>
+    会话扣费：发起会话按工具的「分析积分」扣费（<b>当前各交互式工具都配的是 0 = 分析不扣积分</b>）；「确认生成/导出」再按「生成积分」扣一次。两项都按工具单独配置，失败/取消/过期会退还积分。</p>
+    <div class="toolbar"><span class="muted">共 ${list.length} 条</span>
+    <button class="btn" onclick="openCampaign()">+ 新建活动</button></div>`;
+  if(!list.length){ html += `<p class="muted">暂无活动</p>`; }
+  else{
+    html += `<div class="table-wrap"><table><thead><tr><th>ID</th><th class="nowrap">类型</th><th>活动名</th><th class="nowrap">渠道</th><th>参数</th>
+      <th class="nowrap">开始时间</th><th class="nowrap">结束时间</th><th class="nowrap">状态</th><th>备注</th><th class="nowrap">操作</th></tr></thead><tbody>`;
+    for(const c of list){
+      const tag = c.type==="invite" ? "ok" : (c.type==="checkin" ? "" : "warn");
+      html += `<tr><td>${c.id}</td>
+        <td class="nowrap"><span class="tag ${tag}">${ctypeLabel(c.type)}</span></td>
+        <td class="nowrap">${esc(c.name)}</td><td class="nowrap">${esc(c.channel)}</td>
+        <td class="nowrap">${esc(campaignParamsText(c))}</td>
+        <td class="mono nowrap">${esc((c.start_at||"").replace("T"," ").slice(0,16))}</td>
+        <td class="mono nowrap">${c.end_at?esc(c.end_at.replace("T"," ").slice(0,16)):"长期"}</td>
+        <td class="nowrap">${campaignStatus(c)}</td>
+        <td class="trunc" title="${esc(c.remark||"")}">${esc(c.remark||"")}</td>
+        <td class="actions"><button class="btn ghost" onclick="openCampaign(${c.id})">编辑</button>
+          <button class="btn danger" onclick="delCampaign(${c.id})">删除</button></td></tr>`;
+    }
+    html += `</tbody></table></div>`;
+  }
+  $("#view").innerHTML = html;
+}
+let CAMPAIGN_EDIT = null;
+function campaignParamHtml(type, c){
+  const cfg = (c && c.config) || {};
+  if(type === "discount"){
+    const mode = cfg.mode === "bonus" ? "bonus" : "discount";
+    const d = c && c.discount != null ? c.discount : 0.5;
+    const pct = cfg.bonus_percent ?? 10;
+    return `<div class="camp-fields">
+      <div class="cf-item"><label>优惠方式</label><select id="c_discount_mode" onchange="onDiscountMode()">
+        ${[["discount","打折（降价，积分不变）"],["bonus","送积分（价格不变，额外送积分）"]].map(([v,t])=>`<option value="${v}" ${mode===v?"selected":""}>${t}</option>`).join("")}
+      </select></div>
+      <div class="cf-item" id="c_discount_box" style="${mode === "discount" ? "" : "display:none;"}">
+        <label>折扣（5 折填 0.5，1 为不打折）</label><input id="c_discount" type="number" step="0.05" min="0.1" max="1" value="${d}"/>
+      </div>
+      <div class="cf-item" id="c_bonus_box" style="${mode === "bonus" ? "" : "display:none;"}">
+        <label>送积分比例（充值积分的 %）</label><input id="c_bonus_percent" type="number" min="1" max="1000" value="${pct}"/>
+      </div>
+      <div class="cf-hint muted">
+        <b>打折</b>：实付 = 原价 × 折扣，积分不变（5 折 = 付一半钱拿同样积分）。<br/>
+        <b>送积分</b>：实付不变，额外送 floor(档位积分 × 比例) 积分（例：10% × 100 积分 = 10 积分），支付到账后发放。
+      </div>
+    </div>`;
+  }
+  if(type === "invite"){
+    return `<div class="camp-fields">
+      <div class="cf-sec">① 好友注册即送</div>
+      <div class="cf-item"><label>奖励积分</label><input id="c_reward_quota" type="number" min="0" value="${cfg.reward_quota ?? 1}"/></div>
+      <div class="cf-item"><label>每日奖励人数上限（人）</label><input id="c_invite_daily_cap" type="number" min="0" value="${cfg.invite_daily_cap ?? 10}"/></div>
+      <div class="cf-item"><label>每月奖励人数上限（人）</label><input id="c_invite_monthly_cap" type="number" min="0" value="${cfg.invite_monthly_cap ?? 100}"/></div>
+      <div class="cf-hint muted">好友用你的邀请码注册成功即发，立即到账。上限 = 每天/每月最多结算多少个「邀请」。</div>
+
+      <div class="cf-sec">② 好友首充加奖</div>
+      <div class="cf-item"><label>加奖比例（首充积分的 %）</label><input id="c_recharge_percent" type="number" min="0" max="100" value="${cfg.recharge_percent ?? 10}"/></div>
+      <div class="cf-item"><label>首充期限（天，0 = 不限）</label><input id="c_first_recharge_days" type="number" min="0" value="${cfg.first_recharge_days ?? 30}"/></div>
+      <div class="cf-item"><label>每日加奖笔数上限（笔）</label><input id="c_recharge_daily_cap" type="number" min="0" value="${cfg.recharge_daily_cap ?? 10}"/></div>
+      <div class="cf-item"><label>每月加奖笔数上限（笔）</label><input id="c_recharge_monthly_cap" type="number" min="0" value="${cfg.recharge_monthly_cap ?? 100}"/></div>
+      <div class="cf-hint muted">好友须在绑定后 N 天内完成首充才加奖；加奖积分 = 首充档位积分 × 比例，向下取整（例：10% × 100 积分 = 10 积分）。②的上限独立于①。</div>
+
+      <div class="cf-sec">③ 奖励有效期</div>
+      <div class="cf-item"><label>奖励积分有效期（天）</label><input id="c_valid_days" type="number" min="1" value="${cfg.valid_days ?? 30}"/></div>
+      <div class="cf-hint muted">①②发出的奖励积分，自发放起该天数内有效，到期未用完自动作废。</div>
+    </div>`;
+  }
+  if(type === "checkin"){
+    return `<div><label>签到奖励积分</label><input id="c_ck_quota" type="number" min="0" value="${cfg.quota ?? 1}"/></div>
+      <div><label>有效期（天，0=不过期）</label><input id="c_ck_days" type="number" min="0" value="${cfg.valid_days ?? 30}"/></div>`;
+  }
+  return "";
+}
+function onCampaignType(){
+  const t = $("#c_type").value;
+  $("#c_type_params").innerHTML = campaignParamHtml(t, CAMPAIGN_EDIT);
+}
+async function openCampaign(id){
+  const list = await api("/campaigns");
+  const c = id
+    ? list.find(x=>x.id===id)
+    : {name:"",type:"discount",channel:"wechat",discount:0.5,config:null,start_at:"",end_at:"",enabled:true,remark:""};
+  CAMPAIGN_EDIT = c || {type:"discount"};
+  const types = [["discount","充值优惠"],["invite","邀请有奖"],["checkin","签到奖励"]];
+  $("#modal").innerHTML = `<h3>${id?"编辑活动 #"+id:"新建活动"}</h3>
+    <div class="field row">
+      <div><label>活动类型</label><select id="c_type" onchange="onCampaignType()">
+        ${types.map(([k,v])=>`<option value="${k}" ${c.type===k?"selected":""}>${v}</option>`).join("")}
+      </select></div>
+      <div><label>活动名</label><input id="c_name" value="${esc(c.name||"")}"/></div>
+    </div>
+    <div class="field row">
+      <div><label>渠道</label><select id="c_channel">
+        ${["wechat","alipay","apple"].map(ch=>`<option value="${ch}" ${c.channel===ch?"selected":""}>${ch}</option>`).join("")}
+      </select></div>
+      <div><label><input type="checkbox" id="c_enabled" ${c.enabled!==false?"checked":""}/> 启用</label></div>
+    </div>
+    <div class="field row" id="c_type_params"></div>
+    <div class="field row">
+      <div><label>开始时间</label><input id="c_start" type="datetime-local" value="${esc((c.start_at||"").slice(0,16))}"/></div>
+      <div><label>结束时间（留空＝长期）</label><input id="c_end" type="datetime-local" value="${esc((c.end_at||"").slice(0,16))}"/></div>
+    </div>
+    <div class="field"><label>备注</label><input id="c_remark" value="${esc(c.remark||"")}"/></div>
+    <div class="modal-actions"><button class="btn ghost" onclick="closeModal()">取消</button>
+      <button class="btn" onclick="saveCampaign(${id||""})">保存</button></div>`;
+  showModal();
+  onCampaignType();
+}
+async function saveCampaign(id){
+  const type = $("#c_type").value;
+  const body = {
+    name:$("#c_name").value, type, channel:$("#c_channel").value,
+    start_at:$("#c_start").value || null, end_at:$("#c_end").value || null,
+    enabled:$("#c_enabled").checked, remark:$("#c_remark").value,
+  };
+  if(type === "discount"){
+    const mode = $("#c_discount_mode") ? $("#c_discount_mode").value : "discount";
+    if(mode === "bonus"){
+      body.config = { mode:"bonus", bonus_percent:Number($("#c_bonus_percent").value) };
+    }else{
+      body.config = { mode:"discount" };
+      body.discount = Number($("#c_discount").value);
+    }
+  }else if(type === "invite"){
+    body.config = {
+      reward_quota:Number($("#c_reward_quota").value),
+      invite_daily_cap:Number($("#c_invite_daily_cap").value),
+      invite_monthly_cap:Number($("#c_invite_monthly_cap").value),
+      recharge_percent:Number($("#c_recharge_percent").value),
+      first_recharge_days:Number($("#c_first_recharge_days").value),
+      recharge_daily_cap:Number($("#c_recharge_daily_cap").value),
+      recharge_monthly_cap:Number($("#c_recharge_monthly_cap").value),
+      valid_days:Number($("#c_valid_days").value),
+    };
+  }else if(type === "checkin"){
+    body.config = {
+      quota:Number($("#c_ck_quota").value),
+      valid_days:Number($("#c_ck_days").value),
+    };
+  }
+  try{
+    if(id) await api("/campaigns/"+id,{method:"PUT",body:JSON.stringify(body)});
+    else await api("/campaigns",{method:"POST",body:JSON.stringify(body)});
+    showMsg("已保存",true); closeModal(); renderCampaigns();
+  }catch(e){ showMsg("保存失败: "+e.message,false); }
+}
+async function delCampaign(id){ if(!confirm("确认删除该活动？已产生的订单不受影响")) return;
+  try{ await api("/campaigns/"+id,{method:"DELETE"}); showMsg("已删除",true); renderCampaigns(); }
+  catch(e){ showMsg("删除失败: "+e.message,false); } }
+
+// ---------- 供应商 / 模型 ----------
+async function renderProviders(){
+  const list = await api("/providers");
+  let html = `<div class="toolbar"><button class="btn" onclick="openProv()">+ 新建供应商</button></div><div class="table-wrap"><table>
+    <thead><tr><th>ID</th><th class="nowrap">名称</th><th class="nowrap">接口协议</th><th>Base URL</th><th class="nowrap">优先级</th><th class="nowrap">备案号</th><th class="nowrap">有效模型/总数</th><th class="nowrap">启用</th><th class="nowrap">操作</th></tr></thead><tbody>`;
+  for(const p of list){
+    const cnt = p.model_count ? `${p.effective_model_count}/${p.model_count}` : "-";
+    const disabledNote = (!p.enabled && p.model_count) ? `<span class="muted"> ${p.model_count} 个模型失效</span>` : "";
+    html += `<tr><td class="mono nowrap">${esc(p.id)}</td><td class="nowrap">${esc(p.name)}</td><td class="nowrap">${esc(p.type)}</td>
+      <td class="mono trunc" title="${esc(p.base_url||"")}">${esc(p.base_url||"-")}</td>
+      <td class="nowrap">${p.priority}</td>
+      <td class="mono trunc" title="${esc(p.filing_no||"")}">${p.filing_no?esc(p.filing_no):'<span class="muted">未填写</span>'}</td>
+      <td class="nowrap">${p.enabled?cnt:`<span class="tag warn">${cnt}</span>`}</td>
+      <td class="nowrap">${p.enabled?'<span class="tag">启用</span>':'<span class="tag warn">停用</span>'}${disabledNote}</td>
+      <td class="actions"><button class="btn ghost" onclick="openProv('${esc(p.id)}')">编辑</button>
+        ${p.enabled
+          ? `<button class="btn ghost" onclick="toggleProv('${esc(p.id)}',false)">停用</button>`
+          : `<button class="btn ghost" onclick="toggleProv('${esc(p.id)}',true)">启用</button>`}
+        <button class="btn danger" onclick="delProv('${esc(p.id)}')">删除</button></td></tr>`;
+  }
+  html += `</tbody></table></div><p class="muted">「有效模型/总数」= 该供应商下真正参与调用的模型数 / 全部模型数；供应商停用时有效数为 0（模型自身设置不会被改写，重新启用即恢复）。</p>`;
+  $("#view").innerHTML = html;
+}
+let PROV_EDIT = null;   // 当前编辑的供应商（用于停用前确认影响面）
+async function openProv(id){
+  let p;
+  try{
+    p = id ? await api("/providers/"+id) : {id:"",name:"",type:"openai",base_url:"",api_key:"",priority:10,enabled:true,timeout_ms:30000};
+  }catch(e){ showMsg("打开失败: "+e.message, false); return; }
+  PROV_EDIT = id ? p : null;
+  $("#modal").innerHTML = `<h3>${id?"编辑供应商":"新建供应商"}</h3>
+    <div class="field"><label>ID（唯一）</label><input id="pv_id" value="${esc(p.id)}" ${id?"disabled":""}/></div>
+    <div class="field row"><div><label>名称</label><input id="pv_name" value="${esc(p.name)}"/></div>
+      <div><label>接口协议</label><select id="pv_type">${selectOpts(PROTOCOLS, p.type)}</select></div></div>
+    <p class="muted" style="margin:-4px 0 8px;">接口协议决定用哪个客户端调用。当前网关只实现了 <b>OpenAI 兼容</b>（走 <code>/v1/chat/completions</code>），所以所有供应商都填它；将来接入生图/生视频等非兼容供应商时，才会按协议分 adapter。</p>
+    <div class="field"><label>Base URL</label><input id="pv_url" value="${esc(p.base_url)}"/></div>
+    <div class="field"><label>API Key</label><input id="pv_key" value="${esc(p.api_key||"")}"/></div>
+    <div class="field"><label>大模型备案主体名称（企业名，用于公示）</label><input id="pv_subject" value="${esc(p.filing_subject||"")}"/></div>
+    <div class="field row">
+      <div><label>备案号（供应商级兜底，模型未填时沿用）</label><input id="pv_filing" value="${esc(p.filing_no||"")}"/></div>
+      <div><label>核对来源链接</label><input id="pv_fsrc" value="${esc(p.filing_source_url||"")}"/></div>
+    </div>
+    <div class="field"><label>核对时间</label><input id="pv_fat" value="${esc((p.filing_checked_at||"").slice(0,19))}" placeholder="YYYY-MM-DD HH:MM:SS（留空=未核对）"/></div>
+    <div class="field row"><div><label>优先级</label><input id="pv_pri" type="number" value="${p.priority}"/></div><div><label>超时(ms)</label><input id="pv_to" type="number" value="${p.timeout_ms}"/></div>
+      <div><label><input type="checkbox" id="pv_en" ${p.enabled?"checked":""}/> 启用</label></div></div>
+    ${(!p.enabled || !p.model_enabled_count) ? "" : `<div class="muted" style="color:#b45309;background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:8px 10px;margin:8px 0;font-size:12px;">
+      该供应商下有 <b>${p.model_enabled_count}</b> 个启用中的模型${(p.disable_breaks_roles||[]).length?`，停用后角色 <b>${esc(p.disable_breaks_roles.join(" / "))}</b> 的降级链将没有可用节点（相关 AI 调用会直接失败）`:"，停用后它们会立即失效、不再参与调用"}。模型自身设置会保留，重新启用即恢复。</div>`}
+    <div class="modal-actions"><button class="btn ghost" onclick="closeModal()">取消</button><button class="btn" onclick="saveProv('${esc(id||"")}')">保存</button></div>`;
+  showModal();
+}
+async function saveProv(id){
+  const body={name:$("#pv_name").value,type:$("#pv_type").value,base_url:$("#pv_url").value,api_key:$("#pv_key").value,
+    filing_subject:$("#pv_subject").value||null,
+    filing_no:$("#pv_filing").value||null,
+    filing_source_url:$("#pv_fsrc").value||null,
+    filing_checked_at:$("#pv_fat").value||null,
+    priority:Number($("#pv_pri").value),timeout_ms:Number($("#pv_to").value),enabled:$("#pv_en").checked};
+  if(!id){ body.id=$("#pv_id").value; if(!body.id){showMsg("ID 必填",false);return;} }
+  // 停用前确认：会使其下启用中的模型立即失效，甚至打断整条降级链
+  if(id && PROV_EDIT && PROV_EDIT.enabled && !body.enabled && !confirmDisable(PROV_EDIT.name || id, PROV_EDIT)) return;
+  try{ if(id) await api("/providers/"+id,{method:"PUT",body:JSON.stringify(body)}); else await api("/providers",{method:"POST",body:JSON.stringify(body)});
+    showMsg("已保存",true); closeModal(); renderProviders(); }catch(e){ showMsg("保存失败: "+e.message,false); }
+}
+// 停用确认文案（供应商）：把「会影响什么」说清楚
+function confirmDisable(name, info){
+  const n = info.model_enabled_count || 0;
+  const broken = info.disable_breaks_roles || [];
+  if(!n && !broken.length) return true;
+  const lines = [`确认停用供应商「${name}」？`];
+  if(n) lines.push(`• 其下 ${n} 个启用中的模型将立即失效、不再参与调用（设置会保留）`);
+  if(broken.length) lines.push(`• 角色 ${broken.join(" / ")} 的降级链将没有可用节点，相关 AI 调用会直接报错`);
+  return confirm(lines.join("\n"));
+}
+// 操作列快捷启停：不需进编辑弹窗
+async function toggleProv(id, next){
+  try{
+    if(!next){
+      const p = await api("/providers/"+id);   // 取最新影响面
+      if(!confirmDisable(p.name || id, p)) return;
+    }
+    await api("/providers/"+id, {method:"PUT", body:JSON.stringify({enabled: next})});
+    showMsg(next ? "已启用" : "已停用", true);
+    renderProviders();
+  }catch(e){ showMsg("操作失败: "+e.message, false); }
+}
+async function toggleModel(id, next){
+  try{
+    if(!next){
+      const m = await api("/models/"+id);
+      const broken = m.disable_breaks_roles || [];
+      const ch = m.chains || [];
+      let msg = `确认停用模型「${m.model_actual}」？`;
+      if(broken.length) msg += `\n• 角色 ${broken.join(" / ")} 的降级链将没有可用节点，相关 AI 调用会直接报错`;
+      else if(ch.length) msg += `\n• 它当前在降级链 ${ch.join(" / ")} 中，停用后该节点会被跳过（链上其他节点仍可兜底）`;
+      else msg += `\n• 它未用于任何降级链，停用不影响调用`;
+      if(!confirm(msg)) return;
+    }
+    await api("/models/"+id, {method:"PUT", body:JSON.stringify({enabled: next})});
+    showMsg(next ? "已启用" : "已停用", true);
+    renderModels();
+  }catch(e){ showMsg("操作失败: "+e.message, false); }
+}
+async function delProv(id){ if(!confirm("确认删除？")) return; try{ await api("/providers/"+id,{method:"DELETE"}); showMsg("已删除",true); renderProviders(); }catch(e){ showMsg("删除失败: "+e.message,false);} }
+
+async function renderModels(){
+  const list = await api("/models");
+  let html = `<div class="toolbar"><button class="btn" onclick="openModel()">+ 新建模型</button></div><div class="table-wrap"><table>
+    <thead><tr><th>ID</th><th class="nowrap">供应商</th><th>实际模型名</th><th class="nowrap">所属链</th><th class="nowrap">档位</th><th class="nowrap">单价/1k</th><th class="nowrap">有效状态</th><th class="nowrap">操作</th></tr></thead><tbody>`;
+  for(const m of list){
+    let st;
+    if(m.effective_enabled) st = '<span class="tag">启用</span>';
+    else if(m.enabled) st = '<span class="tag warn" title="所属供应商已停用，该模型不会参与调用">失效</span><span class="muted"> 供应商停用</span>';
+    else st = '<span class="tag warn">停用</span>';
+    const ch = (m.chains||[]).length ? esc(m.chains.join(" + ")) : '<span class="tag warn">未用于任何链</span>';
+    const caps = m.capabilities || (m.supports_vision ? {vision:true} : {});
+    const CAP_NAMES = {vision:"视觉", function_call:"工具", audio_in:"音频", tts:"TTS"};
+    const capTags = Object.keys(CAP_NAMES).filter(c=>caps[c]).map(c=>'<span class="tag">'+CAP_NAMES[c]+'</span>').join(" ");
+    html += `<tr><td>${m.id}</td><td class="mono nowrap">${esc(m.provider_id)}${m.provider_enabled?"":'<span class="tag warn">停用</span>'}</td><td class="mono trunc" title="${esc(m.model_actual)}">${esc(m.model_actual)}${capTags?" "+capTags:""}</td>
+      <td class="nowrap">${ch}</td><td class="nowrap">${esc(m.tier||"")}</td><td class="nowrap">${m.price_per_1k}</td>
+      <td class="nowrap">${st}</td>
+      <td class="actions"><button class="btn ghost" onclick="openModel(${m.id})">编辑</button>
+        ${m.enabled
+          ? `<button class="btn ghost" onclick="toggleModel(${m.id},false)">停用</button>`
+          : `<button class="btn ghost" onclick="toggleModel(${m.id},true)">启用</button>`}
+        <button class="btn danger" onclick="delModel(${m.id})">删除</button></td></tr>`;
+  }
+  html += `</tbody></table></div>
+    <p class="muted">「有效状态」= 供应商启用 且 模型启用（与调用链判定一致）；供应商停用时显示「失效」，模型自身设置保留，供应商重新启用即恢复。</p>
+    <p class="muted">「所属链」= 该模型当前被哪些角色的降级链引用（模型不绑定角色，配一次即可被多条链复用；到「路由」页增删）。显示「未用于任何链」表示它还没被任何角色使用。</p>
+    <p class="muted">「档位」是成本档（cost）/ 质量档（quality）的标识，当前仅用于展示与人工区分，不参与路由决策。</p>`;
+  $("#view").innerHTML = html;
+}
+let MODEL_EDIT = null;      // 当前编辑的模型（用于对比角色勾选变化与影响面）
+let MODEL_ROLES = [];       // 可选角色（来自 /routing）
+async function openModel(id){
+  let m, provs, routing;
+  try{
+    m = id ? await api("/models/"+id) : {provider_id:"",model_actual:"",alias:"",tier:"quality",price_per_1k:0.01,enabled:true,supports_vision:false,capabilities:{},chains:[]};
+    provs = await api("/providers");
+    routing = await api("/routing");
+  }catch(e){ showMsg("打开失败: "+e.message, false); return; }
+  MODEL_EDIT = id ? m : null;
+  MODEL_ROLES = (routing.roles || []).map(r=>r.role);
+  const caps = m.capabilities || (m.supports_vision ? {vision:true} : {});
+  const opts = provs.map(p=>`<option value="${p.id}" ${p.id===m.provider_id?"selected":""}>${esc(p.id)}${p.enabled?"":"（已停用）"}</option>`).join("");
+  const cur = m.chains || [];
+  const roleBoxes = MODEL_ROLES.map(r=>`<label style="display:flex;align-items:center;gap:6px;font-size:13px;font-weight:400;">
+      <input type="checkbox" class="m_chain" value="${esc(r)}" ${cur.indexOf(r)>=0?"checked":""}/> ${esc(ROLE_LABELS[r] || r)}</label>`).join("");
+  $("#modal").innerHTML = `<h3>${id?"编辑模型":"新建模型"}</h3>
+    <div class="field"><label>供应商</label><select id="m_prov">${opts}</select></div>
+    <div class="field"><label>实际模型名</label><input id="m_actual" value="${esc(m.model_actual)}"/></div>
+    <div class="field row">
+      <div><label>档位（成本档/质量档，标识用）</label><select id="m_tier">${selectOpts(TIERS, m.tier)}</select></div>
+      <div><label>单价/1k</label><input id="m_price" type="number" step="0.001" value="${m.price_per_1k}"/></div></div>
+    <div class="field"><label>参与角色（可多选）</label>
+      <div style="display:flex;gap:18px;padding:4px 0;">${roleBoxes || '<span class="muted">（暂无可选角色）</span>'}</div>
+      <p class="muted" style="margin:4px 0 0;">这是模型归属的<b>唯一入口</b>：勾选即加入对应角色的降级链（追加到链尾），取消勾选则移出；「路由」页只负责调整顺序。同一模型可同时参与多个角色，无需重复建记录。</p>
+    </div>
+    <div class="field"><label><input type="checkbox" id="m_en" ${m.enabled?"checked":""}/> 启用</label>
+      <label style="margin-left:18px;"><input type="checkbox" class="m_cap" value="vision" ${caps.vision?"checked":""}/> 支持视觉</label>
+      <label style="margin-left:12px;"><input type="checkbox" class="m_cap" value="function_call" ${caps.function_call?"checked":""}/> 支持工具调用</label>
+      <label style="margin-left:12px;"><input type="checkbox" class="m_cap" value="audio_in" ${caps.audio_in?"checked":""}/> 支持音频输入</label>
+      <p class="muted" style="margin:4px 0 0;">含图请求只路由到「支持视觉」模型；工具调用（多轮追问的检测器）只路由到「支持工具调用」模型。</p></div>
+    <div class="field row">
+      <div><label>备案的模型/算法名称（公示用）</label><input id="m_fname" value="${esc(m.filing_name||"")}"/></div>
+      <div><label>备案号</label><input id="m_fno" value="${esc(m.filing_no||"")}"/></div>
+    </div>
+    <div class="field row">
+      <div><label>核对来源链接</label><input id="m_fsrc" value="${esc(m.filing_source_url||"")}"/></div>
+      <div><label>核对时间</label><input id="m_fat" value="${esc((m.filing_checked_at||"").slice(0,19))}" placeholder="YYYY-MM-DD HH:MM:SS"/></div>
+    </div>
+    <div class="modal-actions"><button class="btn ghost" onclick="closeModal()">取消</button><button class="btn" onclick="saveModel(${id||""})">保存</button></div>`;
+  showModal();
+}
+async function saveModel(id){
+  const capSet = {};
+  document.querySelectorAll(".m_cap:checked").forEach(e=>capSet[e.value]=true);
+  const body={provider_id:$("#m_prov").value,model_actual:$("#m_actual").value,tier:$("#m_tier").value,
+    price_per_1k:Number($("#m_price").value),enabled:$("#m_en").checked,
+    capabilities:capSet,supports_vision:!!capSet.vision,
+    filing_name:$("#m_fname").value||null,filing_no:$("#m_fno").value||null,
+    filing_source_url:$("#m_fsrc").value||null,filing_checked_at:$("#m_fat").value||null};
+  const want = Array.from(document.querySelectorAll(".m_chain:checked")).map(e=>e.value);
+  const cur = (MODEL_EDIT && MODEL_EDIT.chains) || [];
+  const roleChanged = (want.length !== cur.length) || want.some(r=>cur.indexOf(r) < 0);
+  // 取消勾选会让某角色的链失去唯一可用节点时先确认
+  if(id && roleChanged){
+    const breaking = cur.filter(r=>want.indexOf(r) < 0 && ((MODEL_EDIT && MODEL_EDIT.disable_breaks_roles) || []).indexOf(r) >= 0);
+    if(breaking.length && !confirm(`取消勾选「${breaking.join(" / ")}」后，该角色的降级链将没有可用节点，相关 AI 调用会直接报错。\n\n确认继续？`)) return;
+  }
+  try{
+    let saved;
+    if(id) saved = await api("/models/"+id,{method:"PUT",body:JSON.stringify(body)});
+    else saved = await api("/models",{method:"POST",body:JSON.stringify(body)});
+    // 角色勾选有变化再同步降级链（新建模型此时才有 id）
+    if(roleChanged || !id){
+      await api(`/models/${saved.id}/chains`, {method:"PUT", body:JSON.stringify({chains: want})});
+    }
+    showMsg("已保存",true); closeModal(); renderModels();
+  }catch(e){ showMsg("保存失败: "+e.message,false); }
+}
+async function delModel(id){ if(!confirm("确认删除？")) return; try{ await api("/models/"+id,{method:"DELETE"}); showMsg("已删除",true); renderModels(); }catch(e){ showMsg("删除失败: "+e.message,false);} }
+
+// ---------- 路由 ----------
+let ROUTING = null;   // {roles} 本地工作副本（只改顺序，改完统一保存）
+
+function _routingRole(role){ return ROUTING.roles.find(r=>r.role===role); }
+
+async function renderRouting(){
+  ROUTING = await api("/routing");
+  renderRoutingView();
+}
+
+const ROLE_LABELS = {classifier:"意图识别", executor:"工具执行", embedding:"向量嵌入",
+  "executor.vision":"工具执行 · 视觉", "executor.audio_in":"工具执行 · 音频",
+  "executor.function_call":"工具执行 · 工具调用"};
+
+function renderRoutingView(){
+  let html = `<p class="muted">降级链：执行时自上而下依次尝试，失败自动降级到下一个节点。此处<b>只调整顺序</b>（↑ ↓）或<b>移出节点</b>；<b>新增成员请到「模型」页勾选该模型的「参与角色」</b>——归属只有一个入口，避免两处不一致。<b>「失效」节点不会参与调用</b>（其供应商或模型已停用，请到「LLM 供应商/模型」页恢复）。</p>`;
+  for(const r of ROUTING.roles){
+    const live = r.chain.filter(n=>n.effective).length;
+    html += `<div style="border:1px solid #e5e7eb;border-radius:8px;padding:12px;margin-bottom:14px;">
+      <h3 style="margin:0 0 10px;font-size:14px;">${esc(ROLE_LABELS[r.role] || r.role)} 降级链 <span class="mono muted" style="font-size:11px;">${esc(r.role)}</span>
+        <span class="muted">（${r.chain.length} 个节点，其中 ${live} 个生效）</span></h3>`;
+    if(!r.chain.length) html += `<p class="muted">暂无节点 —— 到「模型」页勾选某模型的「参与角色」，它就会出现在这里</p>`;
+    r.chain.forEach((n,i)=>{
+      let badge, why = "";
+      if(n.missing){ badge = '<span class="tag warn">模型缺失</span>'; }
+      else if(n.effective){ badge = '<span class="tag ok">生效</span>'; }
+      else{
+        badge = '<span class="tag warn">失效</span>';
+        const rs = [];
+        if(!n.provider_enabled) rs.push("供应商停用");
+        if(!n.enabled) rs.push("模型停用");
+        why = `<span class="muted">（${rs.join("、")}）</span>`;
+      }
+      html += `<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid #f3f4f6;">
+        <span class="muted" style="width:20px;">${i+1}</span>
+        <span class="mono" style="flex:1;">${esc(n.label||"")}${n.tier?` <span class="muted">[${esc(n.tier)}]</span>`:""} ${badge} ${why}</span>
+        <button class="btn ghost" onclick="routingMove('${esc(r.role)}',${i},-1)" ${i===0?"disabled":""}>↑</button>
+        <button class="btn ghost" onclick="routingMove('${esc(r.role)}',${i},1)" ${i===r.chain.length-1?"disabled":""}>↓</button>
+        <button class="btn ghost" title="等同于在「模型」页取消勾选该角色的「参与角色」" onclick="routingRemove('${esc(r.role)}',${i})">移出</button></div>`;
+    });
+    html += `</div>`;
+  }
+  html += `<p class="muted">调整顺序与移出都是<b>即时生效</b>的，无需再点保存。</p>`;
+  $("#view").innerHTML = html;
+}
+// 顺序/移出都即时落库（避免"改了但没保存"的困惑）
+async function _saveRoleChain(role){
+  const r = _routingRole(role); if(!r) return;
+  try{
+    await api("/routing/"+role, {method:"PUT", body:JSON.stringify({chain: r.chain.map(n=>({model_id:n.model_id}))})});
+    showMsg(`${role} 链已更新`, true);
+  }catch(e){
+    showMsg("更新失败: "+e.message, false);
+  }
+  renderRouting();   // 无论成败都重新拉取，保证界面与服务端一致
+}
+function routingMove(role, idx, delta){
+  const r = _routingRole(role); const j = idx + delta;
+  if(!r || j < 0 || j >= r.chain.length) return;
+  [r.chain[idx], r.chain[j]] = [r.chain[j], r.chain[idx]];
+  renderRoutingView();          // 先本地渲染，点击即时反馈
+  _saveRoleChain(role);         // 再落库
+}
+function routingRemove(role, idx){
+  const r = _routingRole(role); if(!r) return;
+  const node = r.chain[idx];
+  // 若这是该角色最后一个「生效」节点，移出会让整条链失效，先确认
+  const live = r.chain.filter(n=>n.effective).length;
+  if(node && node.effective && live <= 1){
+    if(!confirm(`移出后「${role}」的降级链将没有可用节点，相关 AI 调用会直接报错。\n\n确认移出？`)) return;
+  }
+  r.chain.splice(idx, 1);
+  renderRoutingView();
+  _saveRoleChain(role);
+}
+
+// ---------- 交互式会话（§17） ----------
+let S_FILTER = { q:"", status:"", tool_id:[], account:"", sort:"", dir:"", page:1, size:20 };
+const S_STATUS = {
+  running:["处理中",""], awaiting_answer:["待回答",""], awaiting_confirm:["待确认扣费",""],
+  awaiting_turn:["已完成·可继续","ok"], success:["已完成","ok"],
+  failed:["失败","warn"], expired:["已过期","warn"], cancelled:["已取消","warn"],
+};
+async function renderSessions(){
+  await loadAccounts();
+  await loadTools();
+  const qs = buildQs(S_FILTER);
+  const data = await api("/sessions?" + qs.toString());
+  const list = data.items || [];
+  let html = `<div class="filters">
+    <div class="f"><label>关键词（会话ID / 用户ID / 调用ID）</label><input id="s_q" value="${esc(S_FILTER.q)}"/></div>
+    <div class="f"><label>状态</label><select id="s_status">
+      ${[["","全部"],["running","处理中"],["awaiting_answer","待回答"],["awaiting_confirm","待确认扣费"],
+         ["awaiting_turn","已完成·可继续"],["success","已完成"],["failed","失败"],["expired","已过期"],["cancelled","已取消"]]
+        .map(([v,t])=>`<option value="${v}" ${S_FILTER.status===v?"selected":""}>${t}</option>`).join("")}
+    </select></div>
+    <div class="f"><label>渠道账号</label><select id="s_account">${accountOptions(S_FILTER.account)}</select></div>
+    ${multiSelect("s_tool_ms", "工具（可多选 · 含会话内任一子任务）", ADMIN_TOOLS.map(t=>({value:t.id,label:t.name||t.id,desc:t.id})), S_FILTER.tool_id, {allText:"全部工具", searchPlaceholder:"搜索工具名 / ID…"})}
+    <button class="btn" onclick="applySFilter()">筛选</button>
+    <button class="btn ghost" onclick="resetSFilter()">重置</button>
+  </div>`;
+  if(!list.length){ html += `<p class="muted">暂无会话</p>`; }
+  else{
+    html += `<div class="table-wrap"><table><thead><tr>${thSort("S_FILTER","renderSessions","id","会话")}${thSort("S_FILTER","renderSessions","user_id","用户")}<th class="nowrap">渠道账号</th>
+      ${thSort("S_FILTER","renderSessions","tool_id","工具")}${thSort("S_FILTER","renderSessions","status","状态")}${thSort("S_FILTER","renderSessions","round_count","轮次")}
+      <th class="nowrap">缺失/可疑</th>${thSort("S_FILTER","renderSessions","amount_charged","扣费")}<th class="nowrap">产出</th>
+      ${thSort("S_FILTER","renderSessions","expires_at","过期时间")}<th>输入摘要</th></tr></thead><tbody>`;
+    for(const s of list){
+      const st = S_STATUS[s.status] || [s.status, ""];
+      const cnt = s.analysis_counts || {missing:0, suspicious:0};
+      html += `<tr>
+        <td class="nowrap">#${s.id}</td>
+        <td class="nowrap">${uidCell(s.user_id, s.user, s.user_phone?`<span class="muted"> ${esc(s.user_phone)}</span>`:"")}</td>
+        <td class="nowrap">${esc(s.channel_account_name||s.channel_account_id||"-")}</td>
+        <td class="nowrap"><span class="lnk" onclick="openSession(${s.id})" title="查看本会话的子任务明细">${esc((s.tool_names||[]).join(" → ") || s.tool_name || s.tool_id || "-")}</span><div class="muted">${esc(s.tool_id||"")} · ${s.turn_total||1} 个子任务</div></td>
+        <td class="nowrap"><span class="tag ${st[1]}">${esc(st[0])}</span></td>
+        <td class="nowrap">${s.round_count||0}/${s.max_rounds||"-"}</td>
+        <td class="nowrap">${cnt.missing} / ${cnt.suspicious}</td>
+        <td class="nowrap">${s.charged?`<b>¥ ${Number(s.amount_charged||0).toFixed(2)}</b>`:'<span class="muted">未扣费</span>'}</td>
+        <td class="nowrap">${s.invocation_id?`#${s.invocation_id}`:"-"}</td>
+        <td class="mono nowrap">${s.expires_at?esc(String(s.expires_at).replace("T"," ").slice(0,16)):"-"}</td>
+        <td class="trunc" title="${esc(s.input_text||"")}">${esc(s.input_text||"-")}</td></tr>`;
+    }
+    html += `</tbody></table></div>`;
+  }
+  html += `<p class="muted">🔥 出于隐私考虑，列表不展示附件正文与用户补充内容；排查具体内容请按「产出」的 invocation_id 去「调用明细」页。</p>`;
+  html += pagerHTML(data, "S_FILTER");
+  $("#view").innerHTML = html;
+}
+function applySFilter(){
+  S_FILTER.q = $("#s_q").value.trim();
+  S_FILTER.status = $("#s_status").value;
+  S_FILTER.tool_id = msChecked("s_tool_ms");
+  S_FILTER.account = $("#s_account").value;
+  S_FILTER.page = 1;
+  renderSessions();
+}
+function resetSFilter(){
+  S_FILTER = { q:"", status:"", tool_id:[], account:"", sort:"", dir:"", page:1, size:S_FILTER.size };
+  renderSessions();
+}
+// 会话详情：本会话的全部子任务（多工具会话会含多条）
+async function openSession(id){
+  let d;
+  try{ d = await api("/sessions/"+id); }catch(e){ showMsg("加载失败: "+e.message, false); return; }
+  const s = d.session || {};
+  let html = `<h3>会话 #${s.id} <span class="muted" style="font-weight:400;font-size:12px;">用户 ${s.user_id} · ${esc(s.status||"")} · 成本 ¥${Number(s.llm_cost||0).toFixed(4)}</span></h3>`;
+  html += `<p class="muted">创建 ${esc((s.created_at||"").replace("T"," ").slice(0,16))} · 过期 ${esc((s.expires_at||"").replace("T"," ").slice(0,16))}${s.err?` · ${esc(s.err)}`:""}</p>`;
+  const turns = d.turns || [];
+  if(!turns.length) html += `<p class="muted">无子任务</p>`;
+  else{
+    html += `<div class="table-wrap"><table><thead><tr><th class="nowrap">#</th><th class="nowrap">工具</th><th class="nowrap">状态</th><th class="nowrap">轮次</th><th class="nowrap">扣积分</th><th class="nowrap">金额</th><th class="nowrap">LLM成本</th><th class="nowrap">tokens(入/出)</th><th class="nowrap">产出</th><th class="nowrap">时间</th><th>输入摘要</th></tr></thead><tbody>`;
+    for(const t of turns){
+      const st = S_STATUS[t.status] || [t.status, ""];
+      html += `<tr><td>${t.seq}</td>
+        <td class="nowrap">${esc(t.tool_name||t.tool_id)}<div class="muted">${esc(t.tool_id||"")}</div></td>
+        <td class="nowrap"><span class="tag ${st[1]}">${esc(st[0])}</span></td>
+        <td class="nowrap">${t.round_count||0}</td>
+        <td class="nowrap">${t.charged?`<b>${t.quota_price||0}</b>`:'<span class="muted">未扣</span>'}</td>
+        <td class="nowrap">${t.charged?`¥ ${Number(t.amount_charged||0).toFixed(2)}`:'-'}</td>
+        <td class="nowrap">¥ ${Number(t.llm_cost||0).toFixed(4)}</td>
+        <td class="mono nowrap">${t.prompt_tokens||0} / ${t.completion_tokens||0}</td>
+        <td class="nowrap">${t.invocation_id?`#${t.invocation_id}`:'-'}</td>
+        <td class="mono nowrap">${esc((t.finished_at||t.created_at||"").replace("T"," ").slice(0,16))}</td>
+        <td class="trunc" title="${esc(t.input_text||"")}">${esc(t.input_text||"-")}</td></tr>`;
+    }
+    html += `</tbody></table></div>`;
+  }
+  html += `<div class="modal-actions"><button class="btn ghost" onclick="closeModal()">关闭</button></div>`;
+  $("#modal").innerHTML = html;
+  showModal("980px");
+}
+
+// ---------- 监控 ----------
+const MON_FILTER = { account:"" };
+// 渠道对比排序状态（默认按本月收款倒序）
+let MON_SORT = { key: "paid_total", dir: "desc" };
+function sortChannels(key){
+  if(MON_SORT.key === key) MON_SORT.dir = MON_SORT.dir === "desc" ? "asc" : "desc";
+  else MON_SORT = { key, dir: "desc" };
+  renderMonitor();
+}
+async function renderMonitor(){
+  await loadAccounts();
+  const qs = MON_FILTER.account ? ("?account=" + encodeURIComponent(MON_FILTER.account)) : "";
+  const m = await api("/monitor" + qs);
+  const mo = m.monthly;
+  const b = m.biz || {month:"-",paid_total:0,quota_sold:0,avg_price_per_quota:0,calls_total:0,calls_success:0,quota_consumed:0,cost_total:0,margin:0,margin_pct:null,per_tool:[],per_provider:{}};
+  const pct = Math.min(100, Math.round((mo.ratio||0)*100));
+  const moAcct = mo.account_id
+    ? (CHANNEL_ACCOUNTS.find(a=>a.id===mo.account_id) || {})
+    : (CHANNEL_ACCOUNTS.find(a=>a.id==="default") || {});
+  const acctLabel = mo.account_id ? (moAcct.name || mo.account_id) : "全部渠道（阈值取默认渠道）";
+  const thCustom = !!(moAcct.month_limit || moAcct.warn_threshold || moAcct.stop_threshold);
+  const chans = m.channels || [];
+  const chTotal = m.channels_total || null;
+  // 渠道对比排序
+  const _sortVal = {
+    name: c => (c.name || ""),
+    paid_total: c => Number(c.paid_total || 0),
+    month_limit: c => Number(c.month_limit || 0),
+    ratio: c => Number(c.ratio || 0),
+    calls_total: c => Number(c.calls_total || 0),
+    quota_consumed: c => Number(c.quota_consumed || 0),
+    cost_total: c => Number(c.cost_total || 0),
+    margin: c => Number(c.margin || 0),
+    margin_pct: c => (c.margin_pct === null || c.margin_pct === undefined ? -Infinity : Number(c.margin_pct)),
+  };
+  const chansSorted = [...chans].sort((a, b) => {
+    const f = _sortVal[MON_SORT.key] || _sortVal.paid_total;
+    const x = f(a), y = f(b);
+    const cmp = (typeof x === "string") ? x.localeCompare(y, "zh") : (x > y ? 1 : x < y ? -1 : 0);
+    return MON_SORT.dir === "asc" ? cmp : -cmp;
+  });
+  const sortTh = (key, label) => `<th class="nowrap sorth" style="cursor:pointer;user-select:none;" onclick="sortChannels('${key}')" title="点击排序">${label}${MON_SORT.key === key ? (MON_SORT.dir === "desc" ? " ▼" : " ▲") : ""}</th>`;
+  let html = `<div class="filters">
+    <div class="f"><label>渠道账号（作用于「本月收款监控」与「内容安全命中」）</label><select id="m_account">${accountOptions(MON_FILTER.account)}</select></div>
+    <button class="btn" onclick="applyMonFilter()">筛选</button>
+    <button class="btn ghost" onclick="renderMonitor()">刷新</button>
+  </div>`;
+  html += `<h3 style="margin:0 0 12px;font-size:15px;">渠道对比（本月，全部渠道）
+    <span class="muted" style="font-weight:400;font-size:13px;">· 点击表头排序（汇总行固定在末尾）</span></h3>`;
+  {
+    const rows = chTotal ? [...chansSorted, chTotal] : chansSorted;
+    html += `<div class="table-wrap"><table><thead><tr>
+      ${sortTh("name","渠道账号")}<th class="nowrap">状态</th>
+      ${sortTh("paid_total","本月收款")}${sortTh("month_limit","月限")}
+      ${sortTh("calls_total","调用 成功/总")}${sortTh("quota_consumed","消耗积分")}
+      ${sortTh("cost_total","成本")}${sortTh("margin","毛利")}${sortTh("margin_pct","毛利率")}</tr></thead><tbody>`;
+    for(const c of rows){
+      const isTotal = !c.id;
+      const pct = Math.round((c.ratio||0)*100);
+      const bad = c.margin_pct!==null && c.margin_pct<0.3;
+      const mp = c.margin_pct===null||c.margin_pct===undefined ? "-" : (c.margin_pct*100).toFixed(1)+"%";
+      let tag = "-";
+      if(!isTotal){
+        tag = !c.enabled ? '<span class="tag">停用</span>'
+          : c.sold_out ? '<span class="tag warn">已停售</span>'
+          : c.warn ? '<span class="tag warn">预警</span>' : '<span class="tag ok">正常</span>';
+      }
+      html += `<tr${isTotal?' style="background:#f9fafb;font-weight:600;"':''}>
+        <td class="nowrap">${isTotal?'全部渠道':esc(c.name)}<div class="muted">${isTotal?'汇总（阈值取默认渠道）':esc(c.id)}</div></td>
+        <td class="nowrap">${tag}</td>
+        <td class="nowrap">¥ ${Number(c.paid_total||0).toFixed(2)}<div class="muted">占月限 ${pct}%</div></td>
+        <td class="mono nowrap">¥ ${c.month_limit}</td>
+        <td class="nowrap">${c.calls_success} / ${c.calls_total}</td>
+        <td class="nowrap">${c.quota_consumed}</td>
+        <td class="mono nowrap">¥ ${Number(c.cost_total||0).toFixed(4)}</td>
+        <td class="nowrap" style="${bad?'color:#b91c1c;font-weight:600;':''}">¥ ${Number(c.margin||0).toFixed(2)}</td>
+        <td class="nowrap" style="${bad?'color:#b91c1c;font-weight:600;':''}">${mp}</td></tr>`;
+    }
+    html += `</tbody></table></div>
+      <p class="muted">对比始终统计全部渠道，不受上方「渠道账号」筛选影响；月限/预警/停售阈值在「渠道账号」页按账号配置，毛利率&lt;30% 标红。</p>`;
+  }
+
+  html += `<h3 style="margin:0 0 12px;font-size:15px;">本月收款监控（${mo.year}-${String(mo.month).padStart(2,"0")}）
+    <span class="muted" style="font-weight:400;font-size:13px;">· ${esc(acctLabel)} · ${thCustom ? "自定义阈值" : "默认阈值"}（阈值在「渠道账号」页配置）</span></h3>`;
+  if(mo.upgrade_suggested){
+    html += `<div class="msg err" style="display:block;">⚠️ 本月收款已逼近个人主体月限（10 万/月），建议尽快升级为企业主体</div>`;
+  }
+  html += `<div class="table-wrap"><table><tbody>
+    <tr><th>本月已收款</th><td>¥ ${mo.paid_total.toFixed(2)}</td></tr>
+    <tr><th>月限 / 预警 / 停售阈值</th><td>¥ ${mo.month_limit} / ¥ ${mo.warn_threshold} / ¥ ${mo.stop_threshold}</td></tr>
+    <tr><th>额度使用</th><td>
+      <div style="background:#e5e7eb;border-radius:999px;height:12px;width:100%;max-width:420px;overflow:hidden;">
+        <div style="background:${pct>=90?"#dc2626":pct>=80?"#f59e0b":"#2563eb"};height:12px;width:${pct}%;"></div>
+      </div>
+      <span class="muted">${pct}%</span>
+    </td></tr>
+    <tr><th>状态</th><td>
+      ${mo.sold_out?'<span class="tag warn">已停售</span>':''}
+      ${mo.warn?'<span class="tag warn">预警中</span>':'<span class="tag">正常</span>'}
+      ${mo.upgrade_suggested?'<span class="tag warn">建议升级主体</span>':''}
+    </td></tr>
+  </tbody></table></div>`;
+
+  html += `<h3 style="margin:20px 0 12px;font-size:15px;">经营（${esc(b.month)}，成本闭环 §16.4）
+    <span class="muted" style="font-weight:400;font-size:13px;">· ${esc(acctLabel)}</span></h3><div class="table-wrap"><table><tbody>
+    <tr><th>本月毛收入</th><td>¥ ${b.paid_total.toFixed(2)}（售出 ${b.quota_sold} 次，单次均价 ¥${b.avg_price_per_quota}）</td></tr>
+    <tr><th>调用</th><td>成功 ${b.calls_success} / 共 ${b.calls_total} 次 · 消耗 ${b.quota_consumed} 次额度</td></tr>
+    <tr><th>LLM 成本</th><td>¥ ${b.cost_total}</td></tr>
+    <tr><th>毛利</th><td style="${b.margin_pct!==null&&b.margin_pct<0.3?'color:#b91c1c;font-weight:600;':''}">¥ ${b.margin}${b.margin_pct!==null?`（${(b.margin_pct*100).toFixed(1)}%）`:''}</td></tr>
+  </tbody></table></div>`;
+  if(b.per_tool.length){
+    html += `<div class="table-wrap" style="margin-top:12px;"><table><thead><tr><th>工具</th><th class="nowrap">调用</th><th class="nowrap">消耗积分</th><th class="nowrap">成本</th><th class="nowrap">估算收入</th><th class="nowrap">毛利率</th></tr></thead><tbody>`;
+    for(const t of b.per_tool){
+      const mp = t.margin_pct===null?"-":(t.margin_pct*100).toFixed(1)+"%";
+      const bad = t.margin_pct!==null && t.margin_pct<0.3;
+      html += `<tr><td class="nowrap">${esc(t.tool_name||t.tool_id)}<div class="muted">${esc(t.tool_id)}</div></td><td>${t.calls}</td><td>${t.quota_charged}</td>
+        <td>¥ ${t.cost}</td><td>¥ ${t.revenue_est}</td>
+        <td style="${bad?'color:#b91c1c;font-weight:600;':''}">${mp}</td></tr>`;
+    }
+    html += `</tbody></table></div><p class="muted">估算收入=消耗积分×本月单次均价；毛利率&lt;30% 标红，需校准 price_quota（§16.4-C）。</p>`;
+  }
+  const provs = Object.entries(b.per_provider||{});
+  if(provs.length){
+    html += `<p class="muted" style="margin-top:8px;">供应商分布：${provs.map(([k,v])=>`${esc(k)} ×${v}`).join(" · ")}</p>`;
+  }
+
+  html += `<h3 style="margin:20px 0 12px;font-size:15px;">大模型备案与公示（合规出示 §16.3-B）</h3>
+    <p class="muted">官方公示口径＝「所用已备案模型名称 + 备案号」，故以<b>模型维度</b>登记；模型未填时回落到供应商备案号。备案号可到网信办公示清单 / 算法备案系统 / 厂商开放平台文档核对。</p>`;
+  const mf = m.model_filings || [];
+  if(!mf.length){ html += `<p class="muted">暂无模型配置</p>`; }
+  else{
+    const missing = mf.filter(f=>f.level==="missing").length;
+    if(missing) html += `<div class="msg err" style="display:block;">⚠️ 有 ${missing} 个模型未登记备案号，提审/抽查前必须补齐</div>`;
+    html += `<div class="table-wrap"><table><thead><tr><th class="nowrap">模型</th><th class="nowrap">供应商</th><th class="nowrap">启用</th>
+      <th>备案名称</th><th>备案号</th><th class="nowrap">备案主体</th><th class="nowrap">来源/核对</th></tr></thead><tbody>`;
+    for(const f of mf){
+      const tag = f.level==="model" ? '<span class="tag ok">模型级</span>'
+        : f.level==="provider" ? '<span class="tag">继承供应商</span>'
+        : '<span class="tag warn">未登记</span>';
+      const chains = (f.chains||[]).length
+        ? esc(f.chains.join(" + "))
+        : '<span class="tag warn">未用于任何链</span>';
+      html += `<tr><td class="nowrap">${esc(f.model_actual || f.model || "-")}${f.alias?` <span class="muted">(${esc(f.alias)})</span>`:""}
+          <div class="muted">${esc(f.provider_id||"")} · ${chains}</div></td>
+        <td class="nowrap">${esc(f.provider_name||"-")}</td>
+        <td class="nowrap">${f.enabled?"是":"<span class=\"muted\">停用</span>"}</td>
+        <td class="trunc" title="${esc(f.filing_name||"")}">${esc(f.filing_name||"-")}</td>
+        <td class="mono nowrap" title="${esc(f.filing_no||"")}">${f.filing_no?esc(f.filing_no):'<span class="tag warn">未填</span>'} ${tag}</td>
+        <td class="trunc" title="${esc(f.subject||"")}">${esc(f.subject||"-")}</td>
+        <td class="nowrap">${f.source_url?`<a href="${esc(f.source_url)}" target="_blank" rel="noopener">来源</a>`:"-"}
+          <div class="muted">${f.checked_at?esc(f.checked_at.replace("T"," ").slice(0,10)):"未核对"}</div></td></tr>`;
+    }
+    html += `</tbody></table></div>
+      <p class="muted">公示位：小程序「用户协议与隐私」页底部已展示（数据来自 <span class="mono">/api/compliance/filings</span>）。</p>`;
+  }
+
+  html += `<h3 style="margin:20px 0 12px;font-size:15px;">运营告警</h3>`;
+  if(m.alerts.length){
+    html += `<div class="table-wrap"><table><thead><tr><th class="nowrap">时间</th><th class="nowrap">类型</th><th>内容</th></tr></thead><tbody>`;
+    for(const a of m.alerts){
+      html += `<tr><td class="mono nowrap">${esc((a.created_at||"").replace("T"," ").slice(0,19))}</td><td class="nowrap"><span class="tag warn">${esc(a.kind)}</span></td><td>${esc(a.message)}</td></tr>`;
+    }
+    html += `</tbody></table></div>`;
+  } else { html += `<p class="muted">暂无告警</p>`; }
+
+  const acctName = MON_FILTER.account
+    ? ((CHANNEL_ACCOUNTS.find(a=>a.id===MON_FILTER.account)||{}).name || MON_FILTER.account)
+    : "";
+  html += `<h3 style="margin:20px 0 12px;font-size:15px;">内容安全命中（最近 20 条）${acctName?` <span class="muted" style="font-weight:400;font-size:13px;">· 渠道：${esc(acctName)}</span>`:""}</h3>`;
+  if(m.audit_hits.length){
+    html += `<div class="table-wrap"><table><thead><tr><th class="nowrap">时间</th><th class="nowrap">用户</th><th class="nowrap">层级</th><th>原因</th><th>命中片段</th></tr></thead><tbody>`;
+    for(const a of m.audit_hits){
+      html += `<tr><td class="mono nowrap">${esc((a.created_at||"").replace("T"," ").slice(0,19))}</td><td class="nowrap">${a.user_id?uidCell(a.user_id, a.user):'<span class="muted">-</span>'}</td><td class="nowrap"><span class="tag">${esc(a.stage)}</span></td>
+        <td>${esc(a.reason)}</td><td class="trunc" title="${esc(a.sample||"")}">${esc((a.sample||"").slice(0,80))}</td></tr>`;
+    }
+    html += `</tbody></table></div>`;
+  } else { html += `<p class="muted">暂无命中记录</p>`; }
+
+  html += `<div class="toolbar" style="margin-top:12px;"><span class="muted">数据来自 /api/admin/monitor</span></div>`;
+  $("#view").innerHTML = html;
+}
+function applyMonFilter(){
+  const el = $("#m_account"); if(el) MON_FILTER.account = el.value;
+  renderMonitor();
+}
+const FB_FILTER = { status:"", type:"", q:"", account:"", date_from:"", date_to:"", page:1, size:20 };
+async function renderFeedback(){
+  await loadAccounts();
+  const qs = new URLSearchParams(Object.entries(FB_FILTER).filter(([,v])=>v!==""));
+  const data = await api("/feedback?" + qs.toString());
+  const list = data.items || [];
+  FB_LIST = list;
+  let html = `<div class="filters">
+    <div class="f"><label>状态</label><select id="fb_status">
+      ${[["","全部"],["open","待处理"],["processed","已处理"],["ignored","已忽略"]].map(([v,t])=>`<option value="${v}" ${FB_FILTER.status===v?"selected":""}>${t}</option>`).join("")}
+    </select></div>
+    <div class="f"><label>类型</label><select id="fb_type">
+      ${[["","全部"],["report","举报"],["suggestion","建议"]].map(([v,t])=>`<option value="${v}" ${FB_FILTER.type===v?"selected":""}>${t}</option>`).join("")}
+    </select></div>
+    <div class="f"><label>渠道账号</label><select id="fb_account">${accountOptions(FB_FILTER.account)}</select></div>
+    <div class="f"><label>关键词</label><input id="fb_q" value="${esc(FB_FILTER.q)}" placeholder="内容关键词"/></div>
+    <div class="f"><label>开始日期</label><input id="fb_from" type="date" value="${esc(FB_FILTER.date_from)}"/></div>
+    <div class="f"><label>结束日期</label><input id="fb_to" type="date" value="${esc(FB_FILTER.date_to)}"/></div>
+    <button class="btn" onclick="applyFbFilter()">筛选</button>
+    <button class="btn ghost" onclick="resetFbFilter()">重置</button>
+  </div>`;
+  if(!list.length){ html += `<p class="muted">暂无符合条件的反馈</p>`; }
+  else{
+    html += `<div class="table-wrap"><table><thead><tr><th>ID</th><th class="nowrap">时间</th><th class="nowrap">类型</th><th>内容</th><th class="nowrap">用户</th><th class="nowrap">状态</th><th class="nowrap">操作</th></tr></thead><tbody>`;
+    for(const f of list){
+      html += `<tr><td>${f.id}</td><td class="mono nowrap">${esc((f.created_at||"").replace("T"," ").slice(0,16))}</td>
+        <td class="nowrap"><span class="tag">${f.type==='report'?'举报':'建议'}</span></td>
+        <td class="trunc" title="${esc(f.content||"")}">${esc((f.content||'').slice(0,120))}${f.reply?`<div class="muted" style="margin-top:4px;">↩ 已回复：${esc(f.reply.slice(0,80))}</div>`:''}</td>
+        <td class="nowrap">${f.user_id?uidCell(f.user_id, f.user, f.user_phone?`<span class="muted"> ${esc(f.user_phone)}</span>`:''):'-'}${f.invocation_id?`<span class="muted"> (inv ${f.invocation_id})</span>`:''}</td>
+        <td class="nowrap">${f.status==='open'?'<span class="tag warn">待处理</span>':f.status==='processed'?'<span class="tag ok">已处理</span>':'<span class="tag">已忽略</span>'}</td>
+        <td class="actions"><button class="btn ghost" onclick="openReply(${f.id})">${f.reply ? "改回复" : "回复"}</button>
+            ${f.status!=='processed'?`<button class="btn ghost" onclick="setFeedback(${f.id},'processed')">已处理</button>`:''}
+            ${f.status!=='ignored'?`<button class="btn ghost" onclick="setFeedback(${f.id},'ignored')">忽略</button>`:''}</td></tr>`;
+    }
+    html += `</tbody></table></div>`;
+  }
+  html += pagerHTML(data, "FB_FILTER");
+  $("#view").innerHTML = html;
+}
+function applyFbFilter(){
+  FB_FILTER.status = $("#fb_status").value; FB_FILTER.type = $("#fb_type").value;
+  FB_FILTER.q = $("#fb_q").value.trim(); FB_FILTER.account = $("#fb_account").value;
+  FB_FILTER.date_from = $("#fb_from").value; FB_FILTER.date_to = $("#fb_to").value;
+  FB_FILTER.page = 1;
+  renderFeedback();
+}
+function resetFbFilter(){
+  Object.assign(FB_FILTER, {status:"",type:"",q:"",account:"",date_from:"",date_to:"",page:1});
+  renderFeedback();
+}
+let FB_LIST = [];
+// 回复用户反馈（用户在小程序「我的反馈记录」可见）
+async function openReply(id){
+  const f = (FB_LIST || []).find(x=>x.id===id) || {};
+  $("#modal").innerHTML = `<h3>回复反馈 #${id}</h3>
+    <p class="muted" style="margin:0 0 10px;">${esc((f.content||"").slice(0,200))}</p>
+    <div class="field"><label>回复内容（留空 = 清除回复；回复后该条自动标记为「已处理」）</label>
+      <textarea id="fb_reply" maxlength="1000">${esc(f.reply||"")}</textarea></div>
+    <div class="modal-actions"><button class="btn ghost" onclick="closeModal()">取消</button>
+      <button class="btn" onclick="saveReply(${id})">保存回复</button></div>`;
+  showModal();
+}
+async function saveReply(id){
+  const reply = $("#fb_reply").value.trim();
+  try{
+    await api("/feedback/"+id, {method:"PUT", body:JSON.stringify({reply})});
+    showMsg("已保存", true); closeModal(); renderFeedback();
+  }catch(e){ showMsg("保存失败: "+e.message, false); }
+}
+async function setFeedback(id, status){
+  try{ await api("/feedback/"+id, {method:"PUT", body:JSON.stringify({status})}); renderFeedback(); }
+  catch(e){ showMsg("更新失败: "+e.message, false); }
+}
+
+// ---------- 用户管理 ----------
+const U_FILTER = { q:"", status:"", phone_bound:"", channel:"", account:"", page:1, size:20 };
+const CH_NAMES = { wechat:"微信", alipay:"支付宝", apple:"Apple" };
+function channelTags(chs){
+  if(!chs || !chs.length) return '<span class="muted">未记录</span>';
+  return chs.map(c=>`<span class="tag">${esc(CH_NAMES[c]||c)}</span>`).join(" ");
+}
+async function renderUsers(){
+  await loadAccounts();
+  const qs = new URLSearchParams(Object.entries(U_FILTER).filter(([,v])=>v!==""));
+  const data = await api("/users?" + qs.toString());
+  const list = data.items || [];
+  let html = `<div class="filters">
+    <div class="f"><label>关键词（ID / 手机号 / 昵称）</label><input id="u_q" value="${esc(U_FILTER.q)}" placeholder="如 138 或 昵称"/></div>
+    <div class="f"><label>状态</label><select id="u_status">
+      ${[["","全部"],["normal","正常"],["ban","已封禁"]].map(([v,t])=>`<option value="${v}" ${U_FILTER.status===v?"selected":""}>${t}</option>`).join("")}
+    </select></div>
+    <div class="f"><label>手机号绑定</label><select id="u_phone">
+      ${[["","全部"],["yes","已绑定"],["no","未绑定"]].map(([v,t])=>`<option value="${v}" ${U_FILTER.phone_bound===v?"selected":""}>${t}</option>`).join("")}
+    </select></div>
+    <div class="f"><label>渠道</label><select id="u_channel">
+      ${[["","全部"],["wechat","微信"],["alipay","支付宝"]].map(([v,t])=>`<option value="${v}" ${U_FILTER.channel===v?"selected":""}>${t}</option>`).join("")}
+    </select></div>
+    <div class="f"><label>渠道账号</label><select id="u_account">${accountOptions(U_FILTER.account)}</select></div>
+    <button class="btn" onclick="applyUserFilter()">筛选</button>
+    <button class="btn ghost" onclick="resetUserFilter()">重置</button>
+  </div>`;
+  if(!list.length){ html += `<p class="muted">暂无符合条件的用户</p>`; }
+  else{
+    html += `<div class="table-wrap"><table><thead><tr><th>ID</th><th class="nowrap">渠道</th><th class="nowrap">OpenID</th><th class="nowrap">手机号</th><th class="nowrap">昵称</th><th class="nowrap">状态</th><th class="nowrap">剩余积分</th><th class="nowrap">累计消费</th><th class="nowrap">命中审计</th><th class="nowrap">注册时间</th><th class="nowrap">操作</th></tr></thead><tbody>`;
+    for(const u of list){
+      const remain = u.quota_remain || 0;
+      const quotaTip = `累计获得 ${u.quota_total||0} 积分 · 已用 ${u.quota_used||0} 积分${u.quota_expired>0?" · 已过期作废 "+u.quota_expired+" 积分":""}`;
+      const remainTag = remain > 0 ? `<b>${remain}</b><span class="muted"> / 累计获得 ${u.quota_total||0} 积分</span>` : `<span class="muted">0 / 累计获得 ${u.quota_total||0} 积分</span>`;
+      const paid = (u.paid_amount||0) > 0 ? `<b>¥ ${u.paid_amount.toFixed(2)}</b><span class="muted"> ${u.order_count||0} 单</span>` : '<span class="muted">未消费</span>';
+      html += `<tr><td class="nowrap">${(u.avatar?`<img class="uavatar" src="/api/admin/user-avatar/${u.id}?token=${encodeURIComponent(TOKEN)}" onerror="this.remove()">`:"")}${u.id}</td><td class="nowrap">${channelTags(u.channels)}</td>
+        <td class="mono trunc" title="${esc(u.openid||"")}">${esc(u.openid||'-')}</td><td class="nowrap">${esc(u.phone||'-')}</td>
+        <td class="trunc" title="${esc(u.nickname||"")}">${esc(u.nickname||'-')}</td>
+        <td class="nowrap">${u.status==='ban'?'<span class="tag warn">已封禁</span>':'<span class="tag">正常</span>'}</td>
+        <td class="nowrap" title="${esc(quotaTip)}">${remainTag}</td>
+        <td class="nowrap">${paid}</td>
+        <td class="nowrap">${u.audit_hit_count>0?`<span class="tag warn">${u.audit_hit_count}</span>`:'0'}</td>
+        <td class="mono nowrap">${esc((u.created_at||"").replace("T"," ").slice(0,16))}</td>
+        <td class="actions">
+          <button class="btn ghost" onclick="openUser(${u.id})">消费明细</button>
+          ${u.status==='ban'
+          ?`<button class="btn ghost" onclick="setUser(${u.id},'normal')">恢复</button>`
+          :`<button class="btn danger" onclick="setUser(${u.id},'ban')">封禁</button>`}</td></tr>`;
+    }
+    html += `</tbody></table></div>`;
+  }
+  html += pagerHTML(data, "U_FILTER");
+  $("#view").innerHTML = html;
+}
+function applyUserFilter(){
+  U_FILTER.q = $("#u_q").value.trim(); U_FILTER.status = $("#u_status").value;
+  U_FILTER.phone_bound = $("#u_phone").value; U_FILTER.channel = $("#u_channel").value;
+  U_FILTER.account = $("#u_account").value;
+  U_FILTER.page = 1;
+  renderUsers();
+}
+function resetUserFilter(){
+  Object.assign(U_FILTER, {q:"",status:"",phone_bound:"",channel:"",account:"",page:1});
+  renderUsers();
+}
+async function setUser(id, status){
+  if(status==='ban' && !confirm("确认封禁用户 "+id+"？封禁后无法使用工具")) return;
+  try{ await api("/users/"+id, {method:"PUT", body:JSON.stringify({status})}); renderUsers(); }
+  catch(e){ showMsg("操作失败: "+e.message, false); }
+}
+
+// 用户消费/使用明细
+async function openUser(id){
+  let d;
+  try{ d = await api("/users/"+id); }
+  catch(e){ showMsg("加载失败: "+e.message, false); return; }
+  const u = d.user, a = d.account, s = d.stats;
+  let html = `<h3>用户 #${u.id} 消费明细</h3>
+    <div class="filters" style="box-shadow:none;padding:0 0 12px;gap:22px;">
+      <div><div class="muted">累计充值</div><b>¥ ${s.paid_amount.toFixed(2)}</b><div class="muted">${s.order_count} 单 · ${s.paid_quota} 次</div></div>
+      <div><div class="muted">累计消耗积分</div><b>${s.quota_charged}</b><div class="muted">${s.invocation_count} 次调用</div></div>
+      <div><div class="muted">剩余积分</div><b>${a.quota_remain}</b><div class="muted">累计获得 ${a.quota_total} 积分 · 已用 ${a.quota_used} 积分${a.quota_expired > 0 ? " · 已过期作废 " + a.quota_expired + " 积分" : ""}</div></div>
+      <div><div class="muted">LLM 成本（估算）</div><b>¥ ${s.cost_total}</b><div class="muted">最近使用 ${s.last_active_at?esc(s.last_active_at.replace("T"," ").slice(0,16)):"—"}</div></div>
+    </div>
+    <p class="muted">渠道：${channelTags(u.channels)} · 状态：${u.status==='ban'?'已封禁':'正常'} · 手机：${esc(u.phone||"—")} · 昵称：${esc(u.nickname||"—")} · 注册：${esc((u.created_at||"").replace("T"," ").slice(0,16))}</p>`;
+
+  html += `<h3 style="font-size:14px;margin:14px 0 8px;">充值订单（最近 10 条）</h3>`;
+  if(!d.orders.length) html += `<p class="muted">无充值记录</p>`;
+  else{
+    html += `<div class="table-wrap"><table><thead><tr><th>订单号</th><th class="nowrap">档位</th><th class="nowrap">实付</th><th class="nowrap">原价/优惠</th><th class="nowrap">状态</th><th class="nowrap">下单时间</th><th class="nowrap">支付时间</th></tr></thead><tbody>`;
+    for(const o of d.orders){
+      const disc = o.discount? `${o.origin_amount!=null?"¥"+o.origin_amount.toFixed(2):"-"} / ${discountLabel(o.discount)}${o.campaign_name?" "+esc(o.campaign_name):""}` : "-";
+      html += `<tr><td class="mono nowrap">${esc(o.id.slice(0,14))}…</td><td class="nowrap">${esc(o.package||"-")}</td>
+        <td class="nowrap"><b>¥ ${o.amount.toFixed(2)}</b></td><td class="nowrap">${disc}</td>
+        <td class="nowrap">${orderStatusTag(o.status)}</td>
+        <td class="mono nowrap">${esc((o.created_at||"").replace("T"," ").slice(0,16))}</td>
+        <td class="mono nowrap">${o.paid_at?esc(o.paid_at.replace("T"," ").slice(0,16)):"-"}</td></tr>`;
+    }
+    html += `</tbody></table></div>`;
+  }
+
+  html += `<h3 style="font-size:14px;margin:14px 0 8px;">积分/余额流水（最近 20 条）</h3>`;
+  if(!d.transactions.length) html += `<p class="muted">无流水</p>`;
+  else{
+    html += `<div class="table-wrap"><table><thead><tr><th class="nowrap">时间</th><th class="nowrap">类型</th><th class="nowrap">金额</th><th class="nowrap">积分变动</th><th>备注</th><th class="nowrap">关联单号</th></tr></thead><tbody>`;
+    for(const t of d.transactions){
+      const tn = t.type_label || t.type;
+      html += `<tr><td class="mono nowrap">${esc((t.created_at||"").replace("T"," ").slice(0,16))}</td>
+        <td class="nowrap"><span class="tag">${esc(tn)}</span></td>
+        <td class="nowrap">${t.amount!=null?"¥ "+Number(t.amount).toFixed(2):"-"}</td>
+        <td class="nowrap" style="${t.quota_delta>0?'color:#166534;font-weight:600;':t.quota_delta<0?'color:#b91c1c;':''}">${t.quota_delta>0?"+":""}${t.quota_delta||0}</td>
+        <td class="trunc" title="${esc(t.remark_label||t.remark||"")}">${esc(t.remark_label||t.remark||"")}</td>
+        <td class="mono trunc" title="${esc(t.ref_id||"")}">${esc(t.ref_id||"-")}</td></tr>`;
+    }
+    html += `</tbody></table></div>`;
+  }
+
+  html += `<h3 style="font-size:14px;margin:14px 0 8px;">使用记录（最近 10 条）</h3>`;
+  if(!d.invocations.length) html += `<p class="muted">无使用记录</p>`;
+  else{
+    html += `<div class="table-wrap"><table><thead><tr><th>ID</th><th class="nowrap">工具</th><th class="nowrap">状态</th><th class="nowrap">扣积分</th><th class="nowrap">消费金额</th><th class="nowrap">成本</th><th>输入摘要</th><th class="nowrap">时间</th></tr></thead><tbody>`;
+    for(const i of d.invocations){
+      const amt = i.amount_charged!=null ? `¥ ${i.amount_charged.toFixed(2)}` : '<span class="muted">—</span>';
+      html += `<tr><td>${i.id}</td><td class="nowrap">${esc(i.tool_name||i.tool_id||"-")}<div class="muted">${esc(i.tool_id||"")}</div></td>
+        <td class="nowrap">${invStatusTag(i)}</td>
+        <td class="nowrap">${i.quota_charged||0}</td>
+        <td class="nowrap">${amt}</td>
+        <td class="nowrap">¥ ${i.cost_amount}</td>
+        <td class="trunc" title="${esc(i.input_text||"")}">${esc(i.input_text||"-")}</td>
+        <td class="mono nowrap">${esc((i.created_at||"").replace("T"," ").slice(0,16))}</td></tr>`;
+    }
+    html += `</tbody></table></div>`;
+  }
+
+  html += `<div class="modal-actions"><button class="btn ghost" onclick="closeModal()">关闭</button></div>`;
+  $("#modal").innerHTML = html;
+  showModal("960px");
+}
+
+// ---------- 收款明细 / 订单 ----------
+const ORD_FILTER = { status:"", q:"", channel:"", platform:"", provider:"", campaign:"", account:"", date_from:"", date_to:"", sort:"", dir:"", page:1, size:20 };
+// 支付通道中文标签由后端下发（payment_provider_label）；这里只做兜底
+function payLabel(o){ return o ? (o.payment_provider_label || o.payment_provider || "-") : "-"; }
+function orderStatusTag(s){
+  if(s === "paid") return '<span class="tag ok">已支付</span>';
+  if(s === "pending") return '<span class="tag warn">待支付</span>';
+  if(s === "canceled" || s === "cancelled") return '<span class="tag warn">已取消</span>';
+  if(s === "closed") return '<span class="tag">已关闭</span>';
+  if(s === "refunded") return '<span class="tag warn">已退款</span>';
+  return `<span class="tag">${esc(s)}</span>`;
+}
+// 调用状态标签由后端下发（status_label）；这里按状态决定配色
+function invStatusTag(i){
+  const t = esc((i && (i.status_label || i.status)) || "");
+  const s = i && i.status;
+  if(s === "success") return `<span class="tag ok">${t}</span>`;
+  if(s === "failed") return `<span class="tag warn">${t}</span>`;
+  if(s === "pending" || s === "running") return `<span class="tag warn">${t}</span>`;
+  return `<span class="tag">${t}</span>`;
+}
+async function renderOrders(){
+  await loadAccounts();
+  const qs = new URLSearchParams(Object.entries(ORD_FILTER).filter(([,v])=>v!==""));
+  const data = await api("/orders?" + qs.toString());
+  const list = data.items || [];
+  const s = data.summary || {};
+  let html = `<div class="filters">
+    <div class="f"><label>状态</label><select id="o_status">
+      ${[["","全部"],["paid","已支付"],["pending","待支付"]].map(([v,t])=>`<option value="${v}" ${ORD_FILTER.status===v?"selected":""}>${t}</option>`).join("")}
+    </select></div>
+    <div class="f"><label>渠道账号</label><select id="o_account">${accountOptions(ORD_FILTER.account)}</select></div>
+    <div class="f"><label>订单号 / 用户ID</label><input id="o_q" value="${esc(ORD_FILTER.q)}" placeholder="R2026… 或 12"/></div>
+    <div class="f"><label>渠道</label><select id="o_channel">
+      ${[["","全部"],["wechat","微信"],["alipay","支付宝"],["apple","Apple"]].map(([v,t])=>`<option value="${v}" ${ORD_FILTER.channel===v?"selected":""}>${t}</option>`).join("")}
+    </select></div>
+    <div class="f"><label>平台</label><select id="o_platform">
+      ${[["","全部"],["android","安卓"],["ios","iOS"]].map(([v,t])=>`<option value="${v}" ${ORD_FILTER.platform===v?"selected":""}>${t}</option>`).join("")}
+    </select></div>
+    <div class="f"><label>支付通道</label><select id="o_provider">
+      ${[["","全部"]].concat((data.providers||[]).map(p=>[p.value, `${p.label}（${p.count}）`]))
+        .map(([v,t])=>`<option value="${v}" ${ORD_FILTER.provider===v?"selected":""}>${esc(t)}</option>`).join("")}
+    </select></div>
+    <div class="f"><label>开始日期</label><input id="o_from" type="date" value="${esc(ORD_FILTER.date_from)}"/></div>
+    <div class="f"><label>结束日期</label><input id="o_to" type="date" value="${esc(ORD_FILTER.date_to)}"/></div>
+    <button class="btn" onclick="applyOrdFilter()">筛选</button>
+    <button class="btn ghost" onclick="resetOrdFilter()">重置</button>
+    <button class="btn ghost" onclick="renderTransactions()">积分/余额流水</button>
+  </div>`;
+  html += `<div class="filters" style="gap:24px;">
+    <div><div class="muted">已收款（筛选范围内）</div><b style="font-size:16px;">¥ ${(s.paid_total||0).toFixed(2)}</b></div>
+    <div><div class="muted">原价合计</div><b>¥ ${(s.origin_total||0).toFixed(2)}</b></div>
+    <div><div class="muted">活动优惠</div><b style="color:#dc2626;">- ¥ ${(s.discount_off||0).toFixed(2)}</b></div>
+    <div><div class="muted">已付 / 待付订单</div><b>${s.paid_count||0} / ${s.pending_count||0}</b></div>
+  </div>`;
+  if(!list.length){ html += `<p class="muted">暂无符合条件的订单</p>`; }
+  else{
+    html += `<div class="table-wrap"><table><thead><tr>
+      ${thSort("ORD_FILTER","renderOrders","id","订单号")}${thSort("ORD_FILTER","renderOrders","created_at","下单时间")}${thSort("ORD_FILTER","renderOrders","user_id","用户")}<th class="nowrap">档位</th>
+      ${thSort("ORD_FILTER","renderOrders","origin_amount","原价")}${thSort("ORD_FILTER","renderOrders","amount","实付")}${thSort("ORD_FILTER","renderOrders","discount","优惠")}<th class="nowrap">渠道</th><th class="nowrap">渠道账号</th>
+      <th class="nowrap">平台</th>${thSort("ORD_FILTER","renderOrders","payment_provider","支付通道")}${thSort("ORD_FILTER","renderOrders","status","状态")}${thSort("ORD_FILTER","renderOrders","paid_at","支付时间")}<th class="nowrap">操作</th></tr></thead><tbody>`;
+    for(const o of list){
+      const bonusQ = o.bonus_quota || 0;
+      const camp = o.campaign_name ? `<span class="muted"> ${esc(o.campaign_name)}</span>` : "";
+      const disc = o.discount
+        ? `${discountLabel(o.discount)}${camp}`
+        : (bonusQ > 0 ? `🎁 送 ${bonusQ} 积分${camp}` : "-");
+      html += `<tr>
+        <td class="mono nowrap" title="${esc(o.id)}">${esc(o.id.slice(0,14))}…</td>
+        <td class="mono nowrap">${esc((o.created_at||"").replace("T"," ").slice(0,16))}</td>
+        <td class="nowrap">${uidCell(o.user_id, o.user, o.user_phone?`<span class="muted"> ${esc(o.user_phone)}</span>`:"")}</td>
+        <td class="nowrap">${esc(o.package||"-")}${o.quota?`<span class="muted"> ${o.quota}次</span>`:""}</td>
+        <td class="nowrap">${o.origin_amount!=null?"¥ "+o.origin_amount.toFixed(2):"-"}</td>
+        <td class="nowrap"><b>¥ ${(o.amount||0).toFixed(2)}</b></td>
+        <td class="nowrap">${disc}</td>
+        <td class="nowrap">${esc(CH_NAMES[o.client_channel]||o.client_channel||"-")}</td>
+        <td class="nowrap">${esc(o.channel_account_name||o.channel_account_id||"-")}</td>
+        <td class="nowrap">${esc(o.platform||"-")}</td>
+        <td class="nowrap">${esc(payLabel(o))}</td>
+        <td class="nowrap">${orderStatusTag(o.status)}</td>
+        <td class="mono nowrap">${o.paid_at?esc(o.paid_at.replace("T"," ").slice(0,16)):"-"}</td>
+        <td class="actions">${o.status==="pending"?`<button class="btn ghost" onclick="markPaid('${esc(o.id)}')">补单</button>`:""}
+          <button class="btn ghost" onclick="openUser(${o.user_id})">用户明细</button></td></tr>`;
+    }
+    html += `</tbody></table></div>`;
+  }
+  html += pagerHTML(data, "ORD_FILTER");
+  $("#view").innerHTML = html;
+}
+function applyOrdFilter(){
+  ORD_FILTER.status = $("#o_status").value; ORD_FILTER.q = $("#o_q").value.trim();
+  ORD_FILTER.channel = $("#o_channel").value; ORD_FILTER.platform = $("#o_platform").value;
+  ORD_FILTER.provider = $("#o_provider").value;
+  ORD_FILTER.account = $("#o_account").value;
+  ORD_FILTER.date_from = $("#o_from").value; ORD_FILTER.date_to = $("#o_to").value;
+  ORD_FILTER.page = 1; renderOrders();
+}
+function resetOrdFilter(){
+  Object.assign(ORD_FILTER, {status:"",q:"",channel:"",platform:"",provider:"",campaign:"",account:"",date_from:"",date_to:"",sort:"",dir:"",page:1});
+  renderOrders();
+}
+async function markPaid(id){
+  if(!confirm("确认将该订单标记为已支付？会为用户增加积分并写入流水（人工补单）")) return;
+  try{ await api("/orders/"+id+"/mark-paid", {method:"POST"}); showMsg("已补单", true); renderOrders(); }
+  catch(e){ showMsg("补单失败: "+e.message, false); }
+}
+
+const TX_FILTER = { type:"", q:"", sort:"", dir:"", page:1, size:20 };
+async function renderTransactions(){
+  const qs = new URLSearchParams(Object.entries(TX_FILTER).filter(([,v])=>v!==""));
+  const data = await api("/transactions?" + qs.toString());
+  const list = data.items || [];
+  let html = `<div class="filters">
+    <div class="f"><label>类型</label><select id="t_type">
+      ${[["","全部"]].concat((data.types||[]).map(x=>[x.value, `${x.label}（${x.count}）`]))
+        .map(([v,t])=>`<option value="${v}" ${TX_FILTER.type===v?"selected":""}>${esc(t)}</option>`).join("")}
+    </select></div>
+    <div class="f"><label>订单号 / 用户ID</label><input id="t_q" value="${esc(TX_FILTER.q)}"/></div>
+    <button class="btn" onclick="applyTxFilter()">筛选</button>
+    <button class="btn ghost" onclick="resetTxFilter()">重置</button>
+    <button class="btn ghost" onclick="renderOrders()">返回收款明细</button>
+  </div>`;
+  if(!list.length){ html += `<p class="muted">暂无流水</p>`; }
+  else{
+    html += `<div class="table-wrap"><table><thead><tr>${thSort("TX_FILTER","renderTransactions","id","ID")}${thSort("TX_FILTER","renderTransactions","created_at","时间")}${thSort("TX_FILTER","renderTransactions","user_id","用户")}${thSort("TX_FILTER","renderTransactions","type","类型")}
+      ${thSort("TX_FILTER","renderTransactions","amount","金额")}${thSort("TX_FILTER","renderTransactions","quota_delta","积分变动")}<th class="nowrap">关联单号</th><th>备注</th></tr></thead><tbody>`;
+    for(const t of list){
+      const tn = t.type_label || t.type;
+      html += `<tr><td>${t.id}</td><td class="mono nowrap">${esc((t.created_at||"").replace("T"," ").slice(0,16))}</td>
+        <td class="nowrap">${uidCell(t.user_id, t.user, t.user_phone?`<span class="muted"> ${esc(t.user_phone)}</span>`:"")}</td>
+        <td class="nowrap"><span class="tag">${esc(tn)}</span></td>
+        <td class="nowrap">${t.amount!=null?"¥ "+Number(t.amount).toFixed(2):"-"}</td>
+        <td class="nowrap" style="${t.quota_delta>0?'color:#166534;font-weight:600;':t.quota_delta<0?'color:#b91c1c;':''}">${t.quota_delta>0?"+":""}${t.quota_delta||0}</td>
+        <td class="mono trunc" title="${esc(t.ref_id||"")}">${esc(t.ref_id||"-")}</td>
+        <td class="trunc" title="${esc(t.remark_label||t.remark||"")}">${esc(t.remark_label||t.remark||"")}</td></tr>`;
+    }
+    html += `</tbody></table></div>`;
+  }
+  html += pagerHTML(data, "TX_FILTER");
+  $("#view").innerHTML = html;
+}
+function applyTxFilter(){ TX_FILTER.type = $("#t_type").value; TX_FILTER.q = $("#t_q").value.trim(); TX_FILTER.page=1; renderTransactions(); }
+function resetTxFilter(){ Object.assign(TX_FILTER, {type:"",q:"",sort:"",dir:"",page:1}); renderTransactions(); }
+
+// ---------- 消费总览（全用户聚合 + 全局使用记录） ----------
+const CONS_FILTER = { q:"", status:"", account:"", date_from:"", date_to:"", sort:"amount", dir:"desc", page:1, size:20 };
+async function renderConsumption(){
+  await loadAccounts();
+  const qs = new URLSearchParams(Object.entries(CONS_FILTER).filter(([,v])=>v!==""));
+  const data = await api("/consumption/users?" + qs.toString());
+  const list = data.items || [];
+  const s = data.summary || {};
+  let html = `<div class="filters">
+    <div class="f"><label>关键词（ID / 手机号 / 昵称）</label><input id="c_q" value="${esc(CONS_FILTER.q)}"/></div>
+    <div class="f"><label>状态</label><select id="c_status">
+      ${[["","全部"],["normal","正常"],["ban","已封禁"]].map(([v,t])=>`<option value="${v}" ${CONS_FILTER.status===v?"selected":""}>${t}</option>`).join("")}
+    </select></div>
+    <div class="f"><label>渠道账号</label><select id="c_account">${accountOptions(CONS_FILTER.account)}</select></div>
+    <div class="f"><label>开始日期</label><input id="c_from" type="date" value="${esc(CONS_FILTER.date_from)}"/></div>
+    <div class="f"><label>结束日期</label><input id="c_to" type="date" value="${esc(CONS_FILTER.date_to)}"/></div>
+    <div class="f"><label>排序</label><select id="c_sort">
+      ${[["amount","按累计消费"],["consumed","按消耗积分"],["last_active","按最近活跃"],["id","按注册时间"]].map(([v,t])=>`<option value="${v}" ${CONS_FILTER.sort===v?"selected":""}>${t}</option>`).join("")}
+    </select></div>
+    <button class="btn" onclick="applyConsFilter()">筛选</button>
+    <button class="btn ghost" onclick="resetConsFilter()">重置</button>
+    <button class="btn ghost" onclick="switchTab('invocations')">调用明细</button>
+  </div>`;
+  html += `<div class="filters" style="gap:24px;">
+    <div><div class="muted">累计收款（全站）</div><b style="font-size:16px;">¥ ${(s.paid_total||0).toFixed(2)}</b></div>
+    <div><div class="muted">累计消耗积分</div><b>${s.consumed_total||0}</b></div>
+    <div><div class="muted">有过使用的用户</div><b>${s.active_users||0} / ${s.users_total||0}</b></div>
+  </div>`;
+  if(!list.length){ html += `<p class="muted">暂无数据</p>`; }
+  else{
+    html += `<div class="table-wrap"><table><thead><tr>
+      ${thSort("CONS_FILTER","renderConsumption","id","用户ID")}<th class="nowrap">昵称/手机</th><th class="nowrap">状态</th>${thSort("CONS_FILTER","renderConsumption","amount","累计消费")}<th class="nowrap">充值单数</th>
+      ${thSort("CONS_FILTER","renderConsumption","consumed","消耗积分")}<th class="nowrap">调用次数</th><th class="nowrap">剩余积分</th><th class="nowrap">LLM成本</th>
+      ${thSort("CONS_FILTER","renderConsumption","last_active","最近活跃")}<th class="nowrap">操作</th></tr></thead><tbody>`;
+    for(const u of list){
+      html += `<tr><td title="${esc(userTip(u.user))}" class="utip">${u.user_id}</td>
+        <td class="nowrap">${esc(u.nickname||"-")}<div class="muted">${esc(u.phone||"")}</div></td>
+        <td class="nowrap">${u.status==='ban'?'<span class="tag warn">已封禁</span>':'<span class="tag ok">正常</span>'}</td>
+        <td class="nowrap">${u.paid_amount>0?`<b>¥ ${u.paid_amount.toFixed(2)}</b>`:'<span class="muted">未消费</span>'}</td>
+        <td class="nowrap">${u.order_count||0}</td>
+        <td class="nowrap"><b>${u.quota_consumed||0}</b></td>
+        <td class="nowrap">${u.calls||0}</td>
+        <td class="nowrap" title="累计获得 ${u.quota_total||0} 积分 · 已用 ${u.quota_used||0} 积分${u.quota_expired>0?" · 已过期作废 "+u.quota_expired+" 积分":""}">${u.quota_remain||0}<span class="muted"> / 累计获得 ${u.quota_total||0} 积分</span></td>
+        <td class="nowrap">¥ ${u.cost}</td>
+        <td class="mono nowrap">${u.last_active_at?esc(u.last_active_at.replace("T"," ").slice(0,16)):"<span class=\"muted\">未使用</span>"}</td>
+        <td class="actions"><button class="btn ghost" onclick="openUser(${u.user_id})">消费明细</button></td></tr>`;
+    }
+    html += `</tbody></table></div>`;
+  }
+  html += pagerHTML(data, "CONS_FILTER");
+  $("#view").innerHTML = html;
+}
+function applyConsFilter(){
+  CONS_FILTER.q = $("#c_q").value.trim(); CONS_FILTER.status = $("#c_status").value;
+  CONS_FILTER.date_from = $("#c_from").value; CONS_FILTER.date_to = $("#c_to").value;
+  CONS_FILTER.account = $("#c_account").value;
+  const ns = $("#c_sort").value;
+  if(ns !== CONS_FILTER.sort) CONS_FILTER.dir = "desc";  // 换排序字段时回到默认方向
+  CONS_FILTER.sort = ns;
+  CONS_FILTER.page = 1; renderConsumption();
+}
+function resetConsFilter(){
+  Object.assign(CONS_FILTER, {q:"",status:"",account:"",date_from:"",date_to:"",sort:"amount",dir:"desc",page:1});
+  renderConsumption();
+}
+
+const INV_FILTER = { q:"", tool_id:[], status:"", account:"", date_from:"", date_to:"", sort:"", dir:"", page:1, size:20 };
+async function renderInvocations(){
+  await loadAccounts();
+  await loadTools();
+  const qs = buildQs(INV_FILTER);
+  const data = await api("/invocations?" + qs.toString());
+  const list = data.items || [];
+  const s = data.summary || {};
+  let html = `<div class="filters">
+    <div class="f"><label>关键词（用户ID / 输入内容）</label><input id="i_q" value="${esc(INV_FILTER.q)}"/></div>
+    ${multiSelect("i_tool_ms", "工具（可多选）", ADMIN_TOOLS.map(t=>({value:t.id,label:t.name||t.id,desc:t.id})), INV_FILTER.tool_id, {allText:"全部工具", searchPlaceholder:"搜索工具名 / ID…"})}
+    <div class="f"><label>状态</label><select id="i_status">
+      ${[["","全部"]].concat((data.statuses||[]).map(x=>[x.value, `${x.label}（${x.count}）`])).map(([v,t])=>`<option value="${v}" ${INV_FILTER.status===v?"selected":""}>${esc(t)}</option>`).join("")}
+    </select></div>
+    <div class="f"><label>渠道账号</label><select id="i_account">${accountOptions(INV_FILTER.account)}</select></div>
+    <div class="f"><label>开始日期</label><input id="i_from" type="date" value="${esc(INV_FILTER.date_from)}"/></div>
+    <div class="f"><label>结束日期</label><input id="i_to" type="date" value="${esc(INV_FILTER.date_to)}"/></div>
+    <button class="btn" onclick="applyInvFilter()">筛选</button>
+    <button class="btn ghost" onclick="resetInvFilter()">重置</button>
+  </div>`;
+  html += `<div class="filters" style="gap:24px;">
+    <div><div class="muted">调用笔数（筛选范围内）</div><b style="font-size:16px;">${data.total||0}</b></div>
+    <div><div class="muted">消耗积分合计</div><b>${s.quota_total||0}</b></div>
+    <div><div class="muted">折算消费金额</div><b>¥ ${(s.amount_total||0).toFixed(2)}</b></div>
+    <div><div class="muted">LLM 成本合计</div><b>¥ ${s.cost_total||0}</b></div>
+    <div><div class="muted">全站单次均价</div><b>¥ ${s.unit_price_global||0} / 次</b></div>
+  </div>`;
+  html += `<p class="muted">折算金额 = 该次扣积分 × 用户单次均价（用户累计消费 ÷ 累计获得积分；该用户无充值则按全站均价）。带排序图标的表头可点击排序（<b>服务端排序全部数据</b>，非仅当前页）。</p>`;
+  if(!list.length){ html += `<p class="muted">暂无调用记录</p>`; }
+  else{
+    html += `<div class="table-wrap"><table><thead><tr>
+      ${thSort("INV_FILTER","renderInvocations","id","调用ID")}${thSort("INV_FILTER","renderInvocations","created_at","时间")}${thSort("INV_FILTER","renderInvocations","user_id","用户")}<th class="nowrap">渠道账号</th>${thSort("INV_FILTER","renderInvocations","tool_id","工具")}
+      ${thSort("INV_FILTER","renderInvocations","status","状态")}${thSort("INV_FILTER","renderInvocations","quota_charged","扣积分")}<th class="nowrap">单次单价</th>${thSort("INV_FILTER","renderInvocations","amount_charged","折算金额")}
+      ${thSort("INV_FILTER","renderInvocations","cost_amount","LLM成本")}<th class="nowrap">模型</th><th>输入摘要</th><th class="nowrap">操作</th></tr></thead><tbody>`;
+    for(const i of list){
+      const st = invStatusTag(i);
+      html += `<tr><td>${i.id}</td>
+        <td class="mono nowrap">${esc((i.created_at||"").replace("T"," ").slice(0,16))}</td>
+        <td class="nowrap">${uidCell(i.user_id, i.user, i.user_phone?`<span class="muted"> ${esc(i.user_phone)}</span>`:"")}</td>
+        <td class="nowrap">${esc(i.channel_account_name||i.channel_account_id||"-")}</td>
+        <td class="nowrap">${esc(i.tool_name||i.tool_id||"-")}<div class="muted">${esc(i.tool_id||"")}</div></td>
+        <td class="nowrap">${st}</td>
+        <td class="nowrap"><b>${i.quota_charged||0}</b></td>
+        <td class="nowrap">¥ ${i.unit_price}${i.amount_is_estimated?'<span class="muted"> (估)</span>':""}</td>
+        <td class="nowrap"><b>¥ ${(i.amount_charged!=null?i.amount_charged:(i.amount_est||0)).toFixed(2)}</b>${i.amount_is_estimated?'<div class="muted">估算</div>':""}</td>
+        <td class="nowrap">¥ ${i.cost_amount}</td>
+        <td class="trunc" title="${esc(i.model_used||"")}">${esc(i.model_used||"-")}</td>
+        <td class="trunc" title="${esc(i.input_text||"")}">${esc(i.input_text||"-")}</td>
+        <td class="actions"><button class="btn ghost" onclick="openUser(${i.user_id})">用户明细</button></td></tr>`;
+    }
+    html += `</tbody></table></div>`;
+  }
+  html += pagerHTML(data, "INV_FILTER");
+  $("#view").innerHTML = html;
+}
+function applyInvFilter(){
+  INV_FILTER.q = $("#i_q").value.trim();
+  INV_FILTER.tool_id = msChecked("i_tool_ms");
+  INV_FILTER.status = $("#i_status").value; INV_FILTER.account = $("#i_account").value;
+  INV_FILTER.date_from = $("#i_from").value; INV_FILTER.date_to = $("#i_to").value;
+  INV_FILTER.page = 1; renderInvocations();
+}
+function resetInvFilter(){
+  Object.assign(INV_FILTER, {q:"",tool_id:[],status:"",account:"",date_from:"",date_to:"",sort:"",dir:"",page:1});
+  renderInvocations();
+}
+
+// ---------- 渠道账号（多渠道多应用） ----------
+let CHANNEL_ACCOUNTS = [];
+async function loadAccounts(force){
+  if(CHANNEL_ACCOUNTS.length && !force) return CHANNEL_ACCOUNTS;
+  try{ CHANNEL_ACCOUNTS = await api("/channel-accounts"); }catch(e){ CHANNEL_ACCOUNTS = []; }
+  return CHANNEL_ACCOUNTS;
+}
+function accountOptions(sel){
+  return `<option value="">全部渠道</option>` + CHANNEL_ACCOUNTS
+    .map(a=>`<option value="${esc(a.id)}" ${sel===a.id?"selected":""}>${esc(a.name||a.id)}</option>`).join("");
+}
+
+// ---------- 工具列表（多选筛选用） ----------
+let ADMIN_TOOLS = [];
+async function loadTools(force){
+  if(ADMIN_TOOLS.length && !force) return ADMIN_TOOLS;
+  try{ ADMIN_TOOLS = (await api("/tools?size=200")).items || []; }catch(e){ ADMIN_TOOLS = []; }
+  return ADMIN_TOOLS;
+}
+// ---------- 可售渠道下拉项（充值档位，后端下发） ----------
+let CHANNEL_OPTIONS = [];
+async function loadChannelOptions(force){
+  if(CHANNEL_OPTIONS.length && !force) return CHANNEL_OPTIONS;
+  try{ CHANNEL_OPTIONS = (await api("/channel-options")).channels || []; }catch(e){ CHANNEL_OPTIONS = []; }
+  return CHANNEL_OPTIONS;
+}
+function chanLabel(v){ const o = CHANNEL_OPTIONS.find(x=>x.value===v); return o ? o.label : (v||"-"); }
+
+// ---------- 工具表单可选值（分类 / 执行器，后端下发） ----------
+let TOOL_OPTIONS = { categories: [], executors: [] };
+async function loadToolOptions(force){
+  if(TOOL_OPTIONS.categories.length && !force) return TOOL_OPTIONS;
+  try{ TOOL_OPTIONS = await api("/tool-options"); }catch(e){ TOOL_OPTIONS = { categories: [], executors: [] }; }
+  return TOOL_OPTIONS;
+}
+// 带中文名的下拉选项；历史值不在候选里时补进来，避免一打开就被清掉
+function selectOptsL(items, cur){
+  const all = (items || []).slice();
+  if(cur != null && cur !== "" && !all.some(x=>x.value===cur)) all.push({ value: cur, label: cur + "（历史值）" });
+  return all.map(x=>`<option value="${esc(x.value)}" ${x.value===cur?"selected":""}>${esc(x.label)}</option>`).join("");
+}
+
+// ---------- 工具分类（字典表：C 端类目顺序/名称的唯一来源） ----------
+// 列表内快捷操作：启停按钮 + 改渠道弹窗（多渠道组合也在此完成）
+async function quickToolEnabled(id, on){
+  try{
+    await api("/tools/"+id, {method:"PUT", body:JSON.stringify({enabled:on})});
+    showMsg((on?"已启用 ":"已停用 ")+id, true); renderTools();
+  }catch(e){ showMsg("操作失败: "+e.message, false); }
+}
+async function quickToolHot(id, on){
+  try{
+    await api("/tools/"+id, {method:"PUT", body:JSON.stringify({is_hot:on})});
+    showMsg((on?"已设为热门 ":"已取消热门 ")+id, true); renderTools();
+  }catch(e){ showMsg("操作失败: "+e.message, false); }
+}
+// 批量操作：勾选 → 批量启用/停用/热门/渠道/删除（POST /tools/batch）
+function toggleToolSel(id, on){
+  if(on) TOOL_SEL.add(id); else TOOL_SEL.delete(id);
+  updateBatchBar();
+}
+function updateBatchBar(){
+  const c = $("#selCount"); if (c) c.textContent = TOOL_SEL.size;
+  document.querySelectorAll(".batch-btn").forEach(b => b.disabled = TOOL_SEL.size === 0);
+  const head = document.querySelector(".table-wrap thead input[type=checkbox]");
+  if (head) head.checked = TOOL_PAGE_IDS.length > 0 && TOOL_PAGE_IDS.every(id => TOOL_SEL.has(id));
+}
+// 表头排序：同字段切换方向，新字段按语义给默认方向（名称升序，其余最新在前）
+function toolSort(fd){
+  if(TOOLS_FILTER.sort_by === fd){
+    TOOLS_FILTER.sort_dir = TOOLS_FILTER.sort_dir === "asc" ? "desc" : "asc";
+  } else {
+    TOOLS_FILTER.sort_by = fd;
+    TOOLS_FILTER.sort_dir = fd === "name" ? "asc" : "desc";
+  }
+  TOOLS_FILTER.page = 1;
+  renderTools();
+}
+function toggleAllToolSel(on){
+  TOOL_PAGE_IDS.forEach(id => { if(on) TOOL_SEL.add(id); else TOOL_SEL.delete(id); });
+  renderTools();  // 重建表格让勾选框与集合一致
+}
+async function batchTools(action){
+  const ids = Array.from(TOOL_SEL);
+  if(!ids.length){ showMsg("请先勾选工具", false); return; }
+  if(action==="delete"){ openBatchDeleteConfirm(ids); return; }
+  await doBatchTools(action, ids);
+}
+function openBatchDeleteConfirm(ids){
+  $("#modal").innerHTML = `<h3>确认批量删除</h3>
+    <p>即将删除 <b>${ids.length}</b> 个工具，<span style="color:#dc2626;">此操作不可恢复</span>。</p>
+    <p class="mono muted" style="word-break:break-all;">${ids.map(esc).join("、")}</p>
+    <div class="modal-actions"><button class="btn ghost" onclick="closeModal()">取消</button>
+      <button class="btn danger" onclick="doBatchTools('delete')">确认删除</button></div>`;
+  showModal();
+}
+async function doBatchTools(action, ids){
+  ids = ids || Array.from(TOOL_SEL);
+  if(!ids.length){ showMsg("请先勾选工具", false); return; }
+  try{
+    await api("/tools/batch", {method:"POST", body:JSON.stringify({ids, action})});
+    const label = {enable:"批量启用",disable:"批量停用",hot:"批量设热门",unhot:"批量取消热门",delete:"批量删除"}[action]||action;
+    showMsg(label+"完成（"+ids.length+"个）", true);
+    if(action==="delete") closeModal();
+    TOOL_SEL.clear(); renderTools();
+  }catch(e){ showMsg("批量操作失败: "+e.message, false); }
+}
+async function openToolChanBatch(){
+  const ids = Array.from(TOOL_SEL);
+  if(!ids.length){ showMsg("请先勾选工具", false); return; }
+  const accs = ((await loadAccounts())||[]).filter(a=>a.type==="wechat_mp");
+  $("#modal").innerHTML = `<h3>批量改可见渠道（${ids.length} 个工具）</h3>
+    <p class="muted">不勾选任何渠道 = 全部渠道可见；保存会覆盖所选工具的渠道设置。</p>
+    <div class="field">${multiSelect("msChanQ", "可见渠道", accs.map(a=>({value:a.id,label:(a.name||a.id)+"（"+a.appid+"）"})), [], {allText:"全部渠道", inline:true})}</div>
+    <div class="modal-actions"><button class="btn ghost" onclick="closeModal()">取消</button>
+      <button class="btn" onclick="saveToolChanBatch()">保存</button></div>`;
+  showModal();
+}
+async function saveToolChanBatch(){
+  const ids = Array.from(TOOL_SEL);
+  const chans = Array.from(document.querySelectorAll("#msChanQ input:checked")).map(x=>x.value);
+  try{
+    await api("/tools/batch", {method:"POST", body:JSON.stringify({ids, action:"channel", channel_ids: chans})});
+    showMsg("渠道已批量更新（"+ids.length+"个）", true); closeModal(); TOOL_SEL.clear(); renderTools();
+  }catch(e){ showMsg("保存失败: "+e.message, false); }
+}
+async function openToolChan(id){
+  const accs = ((await loadAccounts())||[]).filter(a=>a.type==="wechat_mp");
+  let cur = [];
+  try{ cur = (await api("/tools/"+id)).channel_ids || []; }catch(e){ /* 用空继续 */ }
+  $("#modal").innerHTML = `<h3>修改可见渠道 · ${esc(id)}</h3>
+    <p class="muted">不勾选任何渠道 = 全部渠道可见；意图识别候选池会同步收缩。</p>
+    <div class="field">${multiSelect("msChanQ", "可见渠道", accs.map(a=>({value:a.id,label:(a.name||a.id)+"（"+a.appid+"）"})), cur, {allText:"全部渠道", inline:true})}</div>
+    <div class="modal-actions"><button class="btn ghost" onclick="closeModal()">取消</button>
+      <button class="btn" onclick="saveToolChan('${esc(id)}')">保存</button></div>`;
+  showModal();
+}
+async function saveToolChan(id){
+  const ids = Array.from(document.querySelectorAll("#msChanQ input:checked")).map(x=>x.value);
+  try{
+    await api("/tools/"+id, {method:"PUT", body:JSON.stringify({channel_ids: ids})});
+    showMsg("渠道已更新", true); closeModal(); renderTools();
+  }catch(e){ showMsg("保存失败: "+e.message, false); }
+}
+async function renderCategories(){
+  let rows;
+  try{
+    rows = await api("/categories");
+  }catch(e){ $("#view").innerHTML = `<p class="muted">加载失败: ${esc(e.message)}</p>`; return; }
+  $("#view").innerHTML = `
+    <div class="toolbar"><button class="btn" onclick="openCat()">+ 新建分类</button>
+      <span class="muted" style="font-size:13px;">排序值小的分类在前（小程序类目顺序）；停用的分类不在小程序展示</span></div>
+    <div class="table-wrap"><table><thead><tr><th class="nowrap">排序</th><th class="nowrap">key</th><th>名称</th><th class="nowrap">工具数</th><th class="nowrap">状态</th><th class="nowrap">操作</th></tr></thead><tbody>
+      ${rows.map(c=>`<tr>
+        <td class="mono nowrap">${c.sort}</td><td class="mono nowrap">${esc(c.key)}</td><td>${esc(c.name)}</td>
+        <td class="nowrap">${c.tool_count}</td>
+        <td class="nowrap">${c.enabled?'<span class="tag ok">启用</span>':'<span class="tag warn">停用</span>'}</td>
+        <td class="nowrap"><button class="btn ghost" onclick="quickCatEnabled('${esc(c.key)}', ${!c.enabled})">${c.enabled?"停用":"启用"}</button>
+          <span class="lnk" onclick="openCat('${esc(c.key)}')">编辑</span> · <span class="lnk" onclick="delCat('${esc(c.key)}')">删除</span></td>
+      </tr>`).join("") || '<tr><td colspan="6" class="muted">暂无分类</td></tr>'}
+    </tbody></table></div>`;
+}
+async function openCat(key){
+  let c = {key:"", name:"", sort:"", enabled:true};
+  if(key){
+    const rows = await api("/categories");
+    c = rows.find(x=>x.key===key) || c;
+  }
+  $("#modal").innerHTML = `<h3>${key?"编辑分类":"新建分类"}</h3>
+    <div class="field"><label>key（唯一，创建后不可改；存入工具的 category 字段）</label><input id="f_catkey" value="${esc(c.key)}" ${key?"disabled":""}/></div>
+    <div class="field row"><div><label>名称</label><input id="f_catname" value="${esc(c.name)}"/></div>
+      <div><label>排序（小在前）</label><input id="f_catsort" type="number" value="${esc(c.sort)}"/></div></div>
+    <div class="field"><label><input type="checkbox" id="f_catenabled" ${c.enabled?"checked":""}/> 启用</label></div>
+    <div class="modal-actions"><button class="btn ghost" onclick="closeModal()">取消</button>
+      <button class="btn" onclick="saveCat('${esc(key||"")}')">保存</button></div>`;
+  showModal();
+}
+async function saveCat(key){
+  const name = $("#f_catname").value.trim();
+  const sort = parseInt($("#f_catsort").value||"0", 10) || 0;
+  const enabled = $("#f_catenabled").checked;
+  try{
+    if(key) await api("/categories/"+key, {method:"PUT", body:JSON.stringify({name, sort, enabled})});
+    else await api("/categories", {method:"POST", body:JSON.stringify({key:$("#f_catkey").value.trim(), name, sort, enabled})});
+    showMsg("已保存", true); closeModal(); renderCategories(); loadToolOptions(true);
+  }catch(e){ showMsg("保存失败: "+e.message, false); }
+}
+async function delCat(key){
+  if(!confirm("确认删除分类 "+key+" ？有工具归属时会被拒绝")) return;
+  try{ await api("/categories/"+key, {method:"DELETE"}); showMsg("已删除", true); renderCategories(); loadToolOptions(true); }
+  catch(e){ showMsg("删除失败: "+e.message, false); }
+}
+async function quickCatEnabled(key, on){
+  try{
+    await api("/categories/"+key, {method:"PUT", body:JSON.stringify({enabled:on})});
+    showMsg((on?"已启用 ":"已停用 ")+key+"，小程序类目即时生效", true); renderCategories();
+  }catch(e){ showMsg("操作失败: "+e.message, false); }
+}
+
+// ---------- 通用查询串构造（支持数组值 → 重复参数） ----------
+// ⚠️ 约定：筛选对象的键名必须与后端接口的参数名一致（如 tool_id / account / date_from），
+//    否则参数会被后端静默忽略、筛选看似不生效。数组值 → 同名重复参数（如 tool_id=a&tool_id=b）。
+function buildQs(f){
+  const p = new URLSearchParams();
+  for(const [k,v] of Object.entries(f)){
+    if(v === "" || v == null) continue;
+    if(Array.isArray(v)){ v.forEach(x=>{ if(x !== "" && x != null) p.append(k, x); }); continue; }
+    p.append(k, v);
+  }
+  return p;
+}
+
+// ---------- 通用多选下拉 ----------
+// items=[{value,label,desc?}]；selected=[value]；opts={allText,inline,searchPlaceholder}
+function multiSelect(msId, label, items, selected, opts){
+  opts = opts || {};
+  const sel = selected || [];
+  const list = items || [];
+  const txt = msSummary(sel, list, opts.allText || "全部");
+  const rows = list.map(it=>{
+    const on = sel.indexOf(it.value) >= 0;
+    return `<label class="ms-item" data-q="${esc(((it.label||"")+" "+(it.value||"")).toLowerCase())}">
+      <input type="checkbox" value="${esc(it.value)}" ${on?"checked":""} onchange="msRefreshText('${msId}')"/>
+      <span>${esc(it.label||it.value)}</span>${it.desc?`<span class="muted ms-id">${esc(it.desc)}</span>`:""}</label>`;
+  }).join("");
+  return `<div class="f ms${opts.inline?" ms-inline":""}" id="${msId}" data-all="${esc(opts.allText||"全部")}">
+    <label>${esc(label)}</label>
+    <div class="ms-btn" onclick="msToggle('${msId}')"><span class="ms-txt">${esc(txt)}</span><span class="caret">▼</span></div>
+    <div class="ms-panel">
+      <input class="ms-search" placeholder="${esc(opts.searchPlaceholder||"搜索…")}" oninput="msFilter('${msId}', this.value)"/>
+      <div class="ms-list">${rows || '<div class="muted" style="padding:6px;">无可选项</div>'}</div>
+      <div class="ms-actions">
+        <button class="btn ghost" onclick="msClear('${msId}')">清空</button>
+        <button class="btn" onclick="msToggle('${msId}')">确定</button>
+      </div>
+    </div>
+  </div>`;
+}
+function msSummary(sel, items, allText){
+  if(!sel.length) return allText;
+  if(sel.length === 1){ const it = (items||[]).find(x=>x.value===sel[0]); return it ? it.label : sel[0]; }
+  return `已选 ${sel.length} 项`;
+}
+function msEl(msId){ return document.getElementById(msId); }
+function msChecked(msId){ const el = msEl(msId); return el ? Array.from(el.querySelectorAll(".ms-list input:checked")).map(cb=>cb.value) : []; }
+function msToggle(msId){
+  const el = msEl(msId); if(!el) return;
+  const open = el.classList.toggle("open");
+  if(open){ const s = el.querySelector(".ms-search"); if(s) setTimeout(()=>s.focus(), 0); }
+}
+function msRefreshText(msId){
+  const el = msEl(msId); if(!el) return;
+  const t = el.querySelector(".ms-txt"); if(!t) return;
+  const checks = el.querySelectorAll(".ms-list input:checked");
+  if(checks.length === 0) t.textContent = el.dataset.all || "全部";
+  else if(checks.length === 1) t.textContent = checks[0].closest(".ms-item").querySelector("span").textContent;
+  else t.textContent = `已选 ${checks.length} 项`;
+}
+function msClear(msId){
+  const el = msEl(msId); if(!el) return;
+  el.querySelectorAll(".ms-list input").forEach(cb=>{ cb.checked = false; });
+  msRefreshText(msId);
+}
+function msFilter(msId, kw){
+  kw = (kw || "").trim().toLowerCase();
+  const el = msEl(msId); if(!el) return;
+  el.querySelectorAll(".ms-item").forEach(it=>{
+    it.style.display = (!kw || (it.dataset.q||"").includes(kw)) ? "" : "none";
+  });
+}
+// 点击面板外收起（事件委托，仅注册一次）
+document.addEventListener("click", (e)=>{
+  document.querySelectorAll(".ms.open").forEach(ms=>{ if(!ms.contains(e.target)) ms.classList.remove("open"); });
+});
+
+const ACCT_TYPE_LABEL = { wechat_mp:"微信小程序", alipay:"支付宝", other:"其他" };
+async function renderAccounts(){
+  const list = await loadAccounts(true);
+  let html = `<p class="muted">一个「渠道账号」= 一个应用（微信小程序 / 公众号 / 其他开放平台应用）。
+    登录时小程序上报自己的 appid，后端据此用对应账号的密钥换取 openid —— <b>多个小程序互不串号</b>；
+    订单 / 调用 / 会话 都记到对应账号名下，各列表可按渠道账号筛选。</p>
+    <div class="toolbar"><span class="muted">共 ${list.length} 个</span>
+    <button class="btn" onclick="openAccount()">+ 新建渠道账号</button></div>`;
+  html += `<div class="table-wrap"><table><thead><tr><th>ID</th><th class="nowrap">类型</th><th>名称</th><th class="nowrap">AppID</th><th class="nowrap">状态</th><th class="nowrap">收款阈值(月限/预警/停售)</th><th>备注</th><th class="nowrap">操作</th></tr></thead><tbody>`;
+  for(const a of list){
+    const customTh = a.month_limit || a.warn_threshold || a.stop_threshold;
+    const thText = `${a.month_limit || 100000} / ${a.warn_threshold || 80000} / ${a.stop_threshold || 90000}`;
+    html += `<tr><td class="mono nowrap">${esc(a.id)}</td>
+      <td class="nowrap"><span class="tag">${esc(ACCT_TYPE_LABEL[a.type]||a.type||"")}</span></td>
+      <td class="nowrap">${esc(a.name||"")}</td>
+      <td class="mono trunc" title="${esc(a.appid||"")}">${esc(a.appid||"-")}</td>
+      <td class="nowrap">${a.enabled?'<span class="tag ok">启用</span>':'<span class="tag warn">停用</span>'}</td>
+      <td class="mono nowrap" title="¥ ${thText}">${customTh?'<b>¥'+thText+'</b>':'<span class="muted">默认 ¥'+thText+'</span>'}</td>
+      <td class="trunc" title="${esc(a.remark||"")}">${esc(a.remark||"")}</td>
+      <td class="actions"><button class="btn ghost" onclick="openAccount('${esc(a.id)}')">编辑</button>
+        ${a.type==='wechat_mp'?`<button class="btn ghost" onclick="openVp('${esc(a.id)}')">支付配置${(a.virtual_pay&&Object.keys(a.virtual_pay).length)?' ●':''}</button>`:''}
+        <button class="btn danger" onclick="delAccount('${esc(a.id)}')">删除</button></td></tr>`;
+  }
+  html += `</tbody></table></div>
+    <p class="muted">非微信渠道（支付宝等）目前只登记信息，登录/支付接入时再补实现。</p>`;
+  $("#view").innerHTML = html;
+}
+// 渠道账户级虚拟支付配置（每小程序一套 OfferID/AppKey/推送密钥；留空回落「支付配置」全局值）
+const VP_FIELDS = [
+  ["offer_id", "OfferID", "该小程序虚拟支付的 OfferID"],
+  ["appkey", "现网 AppKey", "该小程序现网支付签名密钥"],
+  ["sandbox_appkey", "沙箱 AppKey", "该小程序沙箱联调密钥"],
+  ["push_token", "消息推送 Token", "该小程序 mp 后台消息推送配置的 Token"],
+  ["aes_key", "EncodingAESKey", "该小程序 mp 后台生成的 43 位密钥"],
+];
+async function openVp(id){
+  let d;
+  try{ d = await api("/channel-accounts/"+id+"/virtual-pay"); }
+  catch(e){ showMsg("加载失败: "+e.message, false); return; }
+  $("#modal").innerHTML = `<h3>虚拟支付配置 · ${esc(id)}</h3>
+    <p class="muted">全部可部分填写：Token + AESKey 就能通过消息推送 URL 校验；OfferID / AppKey 等开通虚拟支付后再补，缺什么下单/回调时会明确报错。留空 = 使用「支付配置」页的全局回落值（现已移除该页，即 .env）。各小程序回调 URL 都填：/api/payment/virtual-push（系统按 Token 自动识别账户）。</p>
+    ${VP_FIELDS.map(([k,label])=>`
+      <div class="field"><label>${esc(label)}（${k}）</label>
+        <input id="vp_${k}" value="${esc((d.config&&d.config[k])||d.global_fallback[k]||"")}"/></div>`).join("")}
+    <div class="field"><label><input type="checkbox" id="vp_sandbox" ${d.global_fallback.sandbox?"checked":""}/> 沙箱模式（保存后以本账户为准）</label></div>
+    <div class="modal-actions"><button class="btn ghost" onclick="closeModal()">取消</button>
+      <button class="btn" onclick="saveVp('${esc(id)}')">保存</button></div>`;
+  showModal();
+}
+async function saveVp(id){
+  const body = { sandbox: $("#vp_sandbox").checked };
+  VP_FIELDS.forEach(([k])=>{ body[k] = $("#vp_"+k).value.trim(); });
+  try{
+    await api("/channel-accounts/"+id+"/virtual-pay", {method:"PUT", body:JSON.stringify(body)});
+    showMsg("已保存，即时生效", true); closeModal(); renderAccounts();
+  }catch(e){ showMsg("保存失败: "+e.message, false); }
+}
+async function openAccount(id){
+  const list = await loadAccounts();
+  const a = id ? list.find(x=>x.id===id) : {id:"",type:"wechat_mp",name:"",appid:"",secret:"",enabled:true,remark:""};
+  $("#modal").innerHTML = `<h3>${id?"编辑渠道账号":"新建渠道账号"}</h3>
+    <div class="field row">
+      <div><label>ID（留空自动生成；创建后不可改）</label><input id="ac_id" value="${esc(a.id||"")}" ${id?"disabled":""} placeholder="wx_mp_b"/></div>
+      <div><label>类型</label><select id="ac_type">
+        ${[["wechat_mp","微信小程序"],["alipay","支付宝"],["other","其他"]].map(([v,t])=>`<option value="${v}" ${a.type===v?"selected":""}>${t}</option>`).join("")}
+      </select></div>
+    </div>
+    <div class="field"><label>名称</label><input id="ac_name" value="${esc(a.name||"")}" placeholder="万宝AI助手小程序"/></div>
+    <div class="field row">
+      <div><label>AppID</label><input id="ac_appid" class="mono" value="${esc(a.appid||"")}"/></div>
+      <div><label>AppSecret</label>
+        <div class="secret-wrap">
+          <input id="ac_secret" class="mono" type="password" value="${esc(a.secret||"")}"/>
+          <span id="ac_secret_eye" class="eye" onclick="toggleSecret()">显示</span>
+        </div></div>
+    </div>
+    <div class="field"><label><input type="checkbox" id="ac_enabled" ${a.enabled!==false?"checked":""}/> 启用</label></div>
+    <div class="field"><label><input type="checkbox" id="ac_mock" ${a.mock?"checked":""}/> Mock 模式（该渠道登录/手机号/内容安全走假数据，仅测试渠道用；后续接入的其他渠道同样适用）</label></div>
+    <div class="field row">
+      <div><label>主体类型</label><select id="ac_entity">
+        <option value="personal" ${(a.entity_type||"personal")==="personal"?"selected":""}>个人主体（虚拟支付，月限 10 万）</option>
+        <option value="company" ${(a.entity_type||"")==="company"?"selected":""}>企业主体（商户支付）</option>
+      </select></div>
+      <div><label><input type="checkbox" id="ac_paymock" ${a.payment_mock!==false?"checked":""}/> 支付 Mock<br/><span class="muted">模拟支付成功</span></label></div>
+      <div><label>支付通道</label><select id="ac_provider">
+        <option value="mock" ${(a.payment_provider||"mock")==="mock"?"selected":""}>mock（模拟支付，联调用）</option>
+        <option value="wechat_virtual" ${a.payment_provider==="wechat_virtual"?"selected":""}>微信虚拟支付</option>
+        <option value="wechat_merchant" ${a.payment_provider==="wechat_merchant"?"selected":""}>微信商户支付</option>
+      </select></div>
+    </div>
+    <div class="field row">
+      <div><label>月收款上限 ¥（留空=100000）</label><input id="ac_month_limit" type="number" min="0" value="${a.month_limit==null?"":a.month_limit}"/></div>
+      <div><label>预警阈值 ¥（留空=80000）</label><input id="ac_warn" type="number" min="0" value="${a.warn_threshold==null?"":a.warn_threshold}"/></div>
+      <div><label>停售阈值 ¥（留空=90000）</label><input id="ac_stop" type="number" min="0" value="${a.stop_threshold==null?"":a.stop_threshold}"/></div>
+    </div>
+    <p class="muted" style="margin:-4px 0 10px;">本月收款监控按这里的阈值判断「预警 / 停售 / 建议升级主体」；不同渠道账号（不同主体、不同小程序）可分别配置，日活/限额互不影响。留空使用系统默认值。</p>
+    <div class="field"><label>备注</label><input id="ac_remark" value="${esc(a.remark||"")}"/></div>
+    <div class="modal-actions"><button class="btn ghost" onclick="closeModal()">取消</button>
+      <button class="btn" onclick="saveAccount('${esc(id||"")}')">保存</button></div>`;
+  showModal();
+}
+function toggleSecret(){
+  const el = $("#ac_secret"); if(!el) return;
+  const masked = el.type === "password";
+  el.type = masked ? "text" : "password";
+  const eye = $("#ac_secret_eye"); if(eye) eye.textContent = masked ? "隐藏" : "显示";
+}
+async function saveAccount(id){
+  const num = (sel)=>{ const v = $(sel).value.trim(); return v === "" ? null : Number(v); };
+  const body = {
+    id: $("#ac_id").value.trim(), type: $("#ac_type").value,
+    name: $("#ac_name").value.trim(), appid: $("#ac_appid").value.trim(),
+    secret: $("#ac_secret").value.trim(), enabled: $("#ac_enabled").checked, mock: $("#ac_mock").checked,
+    entity_type: $("#ac_entity").value, payment_provider: $("#ac_provider").value, payment_mock: $("#ac_paymock").checked,
+    month_limit: num("#ac_month_limit"), warn_threshold: num("#ac_warn"), stop_threshold: num("#ac_stop"),
+    remark: $("#ac_remark").value,
+  };
+  if(!body.name){ showMsg("名称必填", false); return; }
+  try{
+    if(id) await api("/channel-accounts/"+id,{method:"PUT",body:JSON.stringify(body)});
+    else{
+      await api("/channel-accounts",{method:"POST",body:JSON.stringify(body)});
+    }
+    showMsg("已保存", true); closeModal(); CHANNEL_ACCOUNTS=[]; renderAccounts();
+  }catch(e){ showMsg("保存失败: "+e.message,false); }
+}
+async function delAccount(id){
+  if(!confirm(`确认删除渠道账号「${id}」？`)) return;
+  try{ await api("/channel-accounts/"+id,{method:"DELETE"}); showMsg("已删除",true); CHANNEL_ACCOUNTS=[]; renderAccounts(); }
+  catch(e){ showMsg("删除失败: "+e.message,false); }
+}
+
+// ---------- 管理员账号 ----------
+async function renderAdmins(){
+  const list = await api("/admins");
+  let html = `<div class="toolbar"><span class="muted">管理员账号（单角色 admin）。密码使用 pbkdf2 加盐哈希存储。</span>
+    <button class="btn" onclick="openAdmin()">+ 新建管理员</button></div><div class="table-wrap"><table>
+    <thead><tr><th>ID</th><th class="nowrap">用户名</th><th class="nowrap">姓名</th><th class="nowrap">角色</th><th class="nowrap">状态</th><th class="nowrap">最近登录</th><th class="nowrap">创建时间</th><th class="nowrap">操作</th></tr></thead><tbody>`;
+  for(const a of list){
+    html += `<tr><td>${a.id}</td><td class="nowrap">${esc(a.username)}</td><td class="nowrap">${esc(a.name||'-')}</td>
+      <td class="nowrap">${esc(a.role||'')}</td>
+      <td class="nowrap">${a.status==='disabled'?'<span class="tag warn">已停用</span>':'<span class="tag ok">正常</span>'}</td>
+      <td class="mono nowrap">${esc((a.last_login_at||"-").replace("T"," ").slice(0,16))}</td>
+      <td class="mono nowrap">${esc((a.created_at||"").replace("T"," ").slice(0,16))}</td>
+      <td class="actions">
+        <button class="btn ghost" onclick="openAdmin(${a.id})">改密/编辑</button>
+        <button class="btn ghost" onclick="toggleAdmin(${a.id}, '${a.status==='disabled'?'active':'disabled'}')">${a.status==='disabled'?'启用':'停用'}</button>
+        <button class="btn danger" onclick="delAdmin(${a.id})">删除</button></td></tr>`;
+  }
+  html += `</tbody></table></div>`;
+  $("#view").innerHTML = html;
+}
+async function openAdmin(id){
+  let a = {username:"",name:"",role:"admin",password:""};
+  if(id){ const list = await api("/admins"); a = list.find(x=>x.id===id) || a; }
+  $("#modal").innerHTML = `<h3>${id?"编辑管理员 #"+id:"新建管理员"}</h3>
+    <div class="field"><label>用户名（唯一，创建后不可改）</label><input id="a_user" value="${esc(a.username)}" ${id?"disabled":""}/></div>
+    <div class="field row"><div><label>姓名</label><input id="a_name" value="${esc(a.name||"")}"/></div>
+      <div><label>角色</label><input id="a_role" value="${esc(a.role||"admin")}"/></div></div>
+    <div class="field"><label>${id?"重置密码（留空则不修改）":"密码（至少 8 位）"}</label><input id="a_pass" type="password"/></div>
+    <div class="modal-actions"><button class="btn ghost" onclick="closeModal()">取消</button>
+      <button class="btn" onclick="saveAdmin(${id||""})">保存</button></div>`;
+  showModal();
+}
+async function saveAdmin(id){
+  const body = {name:$("#a_name").value, role:$("#a_role").value, password:$("#a_pass").value};
+  try{
+    if(id){ await api("/admins/"+id, {method:"PUT", body:JSON.stringify(body)}); }
+    else{
+      body.username = $("#a_user").value.trim();
+      if(!body.username){ showMsg("用户名必填", false); return; }
+      if((body.password||"").length < 8){ showMsg("密码至少 8 位", false); return; }
+      await api("/admins", {method:"POST", body:JSON.stringify(body)});
+    }
+    showMsg("已保存", true); closeModal(); renderAdmins();
+  }catch(e){ showMsg("保存失败: "+e.message, false); }
+}
+async function toggleAdmin(id, status){
+  try{ await api("/admins/"+id, {method:"PUT", body:JSON.stringify({status})}); renderAdmins(); }
+  catch(e){ showMsg("操作失败: "+e.message, false); }
+}
+async function delAdmin(id){
+  if(!confirm("确认删除该管理员账号？")) return;
+  try{ await api("/admins/"+id, {method:"DELETE"}); showMsg("已删除", true); renderAdmins(); }
+  catch(e){ showMsg("删除失败: "+e.message, false); }
+}
+
+// ---------- 通用 ----------
+function pagerHTML(data, stateName){
+  const total = data.total || 0, size = data.size || 20, page = data.page || 1;
+  const pages = Math.max(1, Math.ceil(total / size));
+  const rerender = {U_FILTER:"renderUsers()", FB_FILTER:"renderFeedback()", ORD_FILTER:"renderOrders()", TX_FILTER:"renderTransactions()", CONS_FILTER:"renderConsumption()", INV_FILTER:"renderInvocations()", S_FILTER:"renderSessions()", TOOLS_FILTER:"renderTools()"}[stateName] || "renderFeedback()";
+  return `<div class="pager">
+    <span>共 ${total} 条 · 第 ${page}/${pages} 页</span>
+    <select onchange="${stateName}.size=Number(this.value); ${stateName}.page=1; ${rerender}">
+      ${[10,20,50,100].map(n=>`<option value="${n}" ${size===n?"selected":""}>${n} 条/页</option>`).join("")}
+    </select>
+    <button class="btn ghost" ${page<=1?"disabled":""} onclick="${stateName}.page=${page-1}; ${rerender}">上一页</button>
+    <button class="btn ghost" ${page>=pages?"disabled":""} onclick="${stateName}.page=${page+1}; ${rerender}">下一页</button>
+  </div>`;
+}
+// ---------- 通用「表头排序」（服务端排序，作用于全部数据而非当前页） ----------
+// 各列表 state 是模块级 const，这里在调用时（脚本已加载完）再取，避免 TDZ。
+function _filterState(name){
+  return { INV_FILTER, ORD_FILTER, TX_FILTER, CONS_FILTER, S_FILTER, U_FILTER, FB_FILTER }[name];
+}
+function thSort(stateName, rerender, key, label){
+  const st = _filterState(stateName) || {};
+  const arrow = st.sort === key ? (st.dir === "asc" ? " ▲" : " ▼") : "";
+  return `<th style="cursor:pointer;user-select:none;white-space:nowrap;" title="点击排序" onclick="toggleSort('${stateName}','${rerender}','${key}')">${label}${arrow}</th>`;
+}
+function toggleSort(stateName, rerender, key){
+  const st = _filterState(stateName);
+  if(!st) return;
+  if(st.sort === key) st.dir = st.dir === "asc" ? "desc" : "asc";
+  else { st.sort = key; st.dir = "desc"; }
+  st.page = 1;
+  (window[rerender] || function(){})();
+}
+function esc(s){ return String(s==null?"":s).replace(/[&<>"]/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[c])); }// 生成 <select> 选项；当前值不在候选里时保留它（避免一打开编辑就把历史值丢掉）
+function selectOpts(values, cur){ const all = values.slice(); if(cur && all.indexOf(cur) < 0) all.push(cur); return all.map(v=>`<option value="${esc(v)}" ${v===cur?"selected":""}>${esc(v)}</option>`).join(""); }
+function showModal(w){ $("#modal").style.width = w || ""; $("#modalBg").classList.add("show"); }
+function closeModal(){ $("#modalBg").classList.remove("show"); }
+$("#modalBg").addEventListener("click", e=>{ if(e.target===$("#modalBg")) closeModal(); });
+
+// 兜底：任何未捕获的异步错误都提示出来，避免「点了没反应」
+window.addEventListener("unhandledrejection", (e)=>{
+  const msg = (e.reason && e.reason.message) || e.reason || "未知错误";
+  showMsg("操作失败：" + msg, false);
+});
+
+const tabs = { dashboard: renderDashboard, tools: renderTools, categories: renderCategories, packages: renderPackages, campaigns: renderCampaigns, orders: renderOrders,
+  consumption: renderConsumption, invocations: renderInvocations, sessions: renderSessions, providers: renderProviders,
+  models: renderModels, routing: renderRouting, monitor: renderMonitor, feedback: renderFeedback, users: renderUsers,
+  admins: renderAdmins, accounts: renderAccounts };
+
+// 从页面内切换到指定 tab（同步导航高亮）
+function switchTab(name){
+  const btn = document.querySelector(`#sidebar button[data-tab="${name}"]`);
+  if(!btn) return;
+  document.querySelectorAll("#sidebar button").forEach(x=>x.classList.remove("active"));
+  btn.classList.add("active");
+  tabs[name]();
+}
+document.querySelectorAll("#sidebar button").forEach(b=> b.addEventListener("click", ()=>{
+  document.querySelectorAll("#sidebar button").forEach(x=>x.classList.remove("active"));
+  b.classList.add("active");
+  tabs[b.dataset.tab]();
+}));
+$("#lg_pass").addEventListener("keydown", e=>{ if(e.key==="Enter") doLogin(); });
+
+(async ()=>{
+  if(TOKEN){ try{ ME = await api("/me"); enterApp(); return; }catch(e){ /* 令牌失效 */ } }
+  $("#login").classList.add("show");
+})();
+</script>
+</body>
+</html>
