@@ -504,5 +504,117 @@
    "求职"
   ],
   "is_hot": true
+ },
+ {
+  "id": "subtitle_translate",
+  "name": "字幕翻译",
+  "category": "translate",
+  "description": "口语化字幕翻译，保留时间轴",
+  "input_schema": {
+   "attachment": {},
+   "text_fields": [
+    {
+     "key": "text",
+     "label": "字幕文本",
+     "required": true
+    }
+   ]
+  },
+  "prompt_template": "你是影视字幕组译员。请将以下字幕翻译为中文：口语化、简短（每行不超过 18 字）、保留原文行结构与编号，人名首次出现附原文：\n{input}",
+  "price_quota": 10,
+  "analyze_quota": 1,
+  "needs_attachment": false,
+  "async_exec": false,
+  "interactive": false,
+  "tags": [
+   "字幕",
+   "影视",
+   "翻译"
+  ],
+  "is_hot": false
+ },
+ {
+  "id": "classic_translate",
+  "name": "文言文互译",
+  "category": "translate",
+  "description": "文言文与白话文互译",
+  "input_schema": {
+   "attachment": {},
+   "text_fields": [
+    {
+     "key": "text",
+     "label": "文言或白话文本",
+     "required": true
+    }
+   ]
+  },
+  "prompt_template": "你是古汉语教师。请判断输入是文言文还是白话文并互译：文言译白话要逐句对照；白话译文言要符合文言语法与用词风格，译后附重点字词解释：\n{input}",
+  "price_quota": 10,
+  "analyze_quota": 1,
+  "needs_attachment": false,
+  "async_exec": false,
+  "interactive": false,
+  "tags": [
+   "文言文",
+   "古文",
+   "翻译"
+  ],
+  "is_hot": true
+ },
+ {
+  "id": "color_scheme",
+  "name": "配色方案",
+  "category": "design",
+  "description": "生成配色方案与色值",
+  "input_schema": {
+   "attachment": {},
+   "text_fields": [
+    {
+     "key": "text",
+     "label": "品牌调性与场景",
+     "required": true
+    }
+   ]
+  },
+  "prompt_template": "你是视觉设计师。请根据以下调性给 2 套配色方案：主色/辅色/强调色/中性色（附 HEX 色值）、适用场景说明、对比度可读性检查提醒：\n{input}",
+  "price_quota": 10,
+  "analyze_quota": 1,
+  "needs_attachment": false,
+  "async_exec": false,
+  "interactive": false,
+  "tags": [
+   "配色",
+   "色值",
+   "视觉"
+  ],
+  "is_hot": false
+ },
+ {
+  "id": "ai_prompt",
+  "name": "AI 绘画提示词",
+  "category": "design",
+  "description": "生成 Midjourney/SD 绘画提示词",
+  "input_schema": {
+   "attachment": {},
+   "text_fields": [
+    {
+     "key": "text",
+     "label": "画面描述与风格",
+     "required": true
+    }
+   ]
+  },
+  "prompt_template": "你是 AI 绘画提示词专家。请根据以下画面描述生成：中文画面拆解（主体/环境/构图/光影/风格）、Midjourney 英文提示词（含参数建议）、SD 正/负面提示词，给 2 个风格版本：\n{input}",
+  "price_quota": 10,
+  "analyze_quota": 1,
+  "needs_attachment": false,
+  "async_exec": false,
+  "interactive": false,
+  "tags": [
+   "AI绘画",
+   "提示词",
+   "Midjourney"
+  ],
+  "is_hot": false
  }
 ]
