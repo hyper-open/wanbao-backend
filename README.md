@@ -24,7 +24,7 @@
 
 ### 模型与能力路由
 ![模型管理](docs/images/admin-models.png)
-
+![能力路由](docs/images/admin-router.png)
 ## 快速开始
 
 ### 前置要求
@@ -76,6 +76,13 @@ docker compose up -d
 
 - 小程序内 AI 生成内容已做显著标识（顶部提示条 + 逐条角标）；若你的产品含 AI 问答/生成能力，**上线需申请「深度合成」相关服务类目**，该类目仅向企业/组织主体开放
 - 请遵守《生成式人工智能服务管理暂行办法》：如自行面向公众提供生成服务，需完成相应算法备案或与已备案供应商签署合作协议
+
+## 联系作者
+
+- 技术问题 / Bug 反馈：请提 [Issue](../../issues)，方便沉淀给后来人
+- 交流 / 合作：扫码添加微信（备注 GitHub）
+
+<p align="center"><img src="docs/images/wechat-qrcode.png" width="240" alt="作者微信"></p>
 
 ## License
 
