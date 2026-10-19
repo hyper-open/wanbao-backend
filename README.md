@@ -23,7 +23,7 @@
 ![工具管理](docs/images/admin-tools.png)
 
 ### 模型与能力路由
-![模型管理](docs/images/admin-models.png)
+![模型管理](docs/images/admin-models.png?v=2)
 ![能力路由](docs/images/admin-router.png)
 ## 快速开始
 
